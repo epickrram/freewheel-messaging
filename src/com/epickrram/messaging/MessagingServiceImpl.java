@@ -25,6 +25,8 @@ public final class MessagingServiceImpl implements MessagingService
     private final Thread listenerThread;
     private final CountDownLatch listenerThreadStartedLatch = new CountDownLatch(1);
 
+    private volatile boolean isShuttingDown = false;
+
     public MessagingServiceImpl(final String ipAddress, final int port)
     {
         this.ipAddress = ipAddress;
@@ -93,6 +95,7 @@ public final class MessagingServiceImpl implements MessagingService
     {
         try
         {
+            isShuttingDown = true;
             listenerThread.interrupt();
             multicastSocket.close();
             listenerThread.join();
@@ -135,8 +138,10 @@ public final class MessagingServiceImpl implements MessagingService
                 }
                 catch (IOException e)
                 {
-                    // TODO don't log if in shutdown mode and SocketException occurs
-                    LOGGER.log(Level.WARNING, "Failed to receive datagram packet", e);
+                    if(!isShuttingDown)
+                    {
+                        LOGGER.log(Level.WARNING, "Failed to receive datagram packet", e);
+                    }
                 }
             }
             LOGGER.info("MessageHandler thread interrupted. Shutting down.");
