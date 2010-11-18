@@ -1,6 +1,8 @@
 package com.epickrram.util;
 
-public interface DirectCircularBuffer<T> extends CircularBuffer<T>
+public interface DirectCircularBuffer<T>
 {
-    void set(T item, long sequence);
+    void set(long sequence, T item);
+    T get(long sequence);
+    long getSequence();
 }
