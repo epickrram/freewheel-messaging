@@ -4,11 +4,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings({"UnnecessaryBoxing"})
 public final class BlockingCircularBufferTest
 {
     private static final int DEFAULT_BUFFER_SIZE = 8;
 
-    private BlockingCircularBuffer<Integer> circularBuffer;
+    private CircularBuffer<Integer> circularBuffer;
 
     @Test
     public void shouldStartAtNegativeOne() throws Exception
