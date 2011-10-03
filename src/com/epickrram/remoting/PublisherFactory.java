@@ -89,15 +89,13 @@ public final class PublisherFactory
 
         methodSource.append(") {").
                 append("final ByteOutputBuffer buffer = getBuffer();").
-                append("buffer.reset();").
-                append("buffer.writeInt(getTopicId());").
                 append("buffer.writeByte((byte) ").
                 append(methodIndex).
                 append(");");
 
         appendBufferCalls(methodSource, parameterTypes);
 
-        methodSource.append("getMessagingService().send(getTopicId(), buffer);}");
+        methodSource.append("send();}");
 
         return CtNewMethod.make(methodSource.toString(), ctClass).getMethodInfo();
     }

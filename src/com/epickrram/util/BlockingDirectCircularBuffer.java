@@ -23,15 +23,18 @@ public final class BlockingDirectCircularBuffer<T> implements DirectCircularBuff
 
     public void set(final long sequence, final T item)
     {
+        System.err.println("writeLock.lock");
         writeLock.lock();
         try
         {
+            System.err.println("locked");
             data[getIndex(sequence)] = item;
             contiguousSequence.set(sequence);
         }
         finally
         {
             writeLock.unlock();
+            System.err.println("unlocked");
         }
     }
 
@@ -44,7 +47,7 @@ public final class BlockingDirectCircularBuffer<T> implements DirectCircularBuff
         }
         finally
         {
-            readLock.lock();
+            readLock.unlock();
         }
     }
 

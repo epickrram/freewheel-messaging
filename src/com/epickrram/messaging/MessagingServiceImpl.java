@@ -48,8 +48,6 @@ public final class MessagingServiceImpl implements MessagingService
 
     public void send(final int topicId, final ByteOutputBuffer message) throws MessagingException
     {
-        message.setPosition(0);
-        message.writeInt(topicId);
         try
         {
             final DatagramPacket sendPacket = new DatagramPacket(message.getBackingArray(), 0, message.count());

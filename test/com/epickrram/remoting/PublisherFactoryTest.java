@@ -1,6 +1,6 @@
 package com.epickrram.remoting;
 
-import com.epickrram.messaging.MessagingService;
+import com.epickrram.messaging.RecordingMessagingService;
 import com.epickrram.stream.ByteArrayOutputBufferImpl;
 import com.epickrram.stream.ByteOutputBuffer;
 import org.jmock.Expectations;
@@ -19,31 +19,35 @@ public final class PublisherFactoryTest
     private static final byte FIRST_METHOD_INDEX = 1;
     private static final int INT_VALUE_1 = 289374234;
     private static final int INT_VALUE_2 = 389475234;
-
-    private Mockery mockery = new Mockery();
-    private MessagingService messagingService;
-    private TopicIdGenerator topicIdGenerator;
-    private PublisherFactory publisherFactory;
     private static final byte BYTE_VALUE = (byte)126;
     private static final long LONG_VALUE = 3928473424L;
+
+    private Mockery mockery = new Mockery();
+    private RecordingMessagingService messagingService;
+    private TopicIdGenerator topicIdGenerator;
+    private PublisherFactory publisherFactory;
 
     @Test
     public void shouldGeneratePublisherForSingleNoArgsMethodInterface() throws Exception
     {
         final SingleNoArgsMethodInterface publisher = publisherFactory.createPublisher(SingleNoArgsMethodInterface.class);
-        final ByteOutputBuffer expectedMessage = new ByteArrayOutputBufferImpl(8);
-        expectedMessage.writeInt(TOPIC_IC);
-        expectedMessage.writeByte(FIRST_METHOD_INDEX);
+        final ByteOutputBuffer expectedMessageOne = new ByteArrayOutputBufferImpl(8);
+        expectedMessageOne.writeInt(TOPIC_IC);
+        expectedMessageOne.writeLong(0L);
+        expectedMessageOne.writeByte(FIRST_METHOD_INDEX);
+        expectedMessageOne.setPosition(0);
 
-        mockery.checking(new Expectations()
-        {
-            {
-                exactly(2).of(messagingService).send(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessage)));
-            }
-        });
+        final ByteOutputBuffer expectedMessageTwo = new ByteArrayOutputBufferImpl(8);
+        expectedMessageTwo.writeInt(TOPIC_IC);
+        expectedMessageTwo.writeLong(1L);
+        expectedMessageTwo.writeByte(FIRST_METHOD_INDEX);
+        expectedMessageTwo.setPosition(0);
 
+//        publisher.invoke();
         publisher.invoke();
-        publisher.invoke();
+
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageOne));
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageTwo));
     }
 
     @Test
@@ -52,24 +56,22 @@ public final class PublisherFactoryTest
         final SingleArgMethodInterface publisher = publisherFactory.createPublisher(SingleArgMethodInterface.class);
         final ByteOutputBuffer expectedMessageOne = new ByteArrayOutputBufferImpl(16);
         expectedMessageOne.writeInt(TOPIC_IC);
+        expectedMessageOne.writeLong(0L);
         expectedMessageOne.writeByte(FIRST_METHOD_INDEX);
         expectedMessageOne.writeInt(INT_VALUE_1);
 
         final ByteOutputBuffer expectedMessageTwo = new ByteArrayOutputBufferImpl(16);
         expectedMessageTwo.writeInt(TOPIC_IC);
+        expectedMessageTwo.writeLong(1L);
         expectedMessageTwo.writeByte(FIRST_METHOD_INDEX);
         expectedMessageTwo.writeInt(INT_VALUE_2);
 
-        mockery.checking(new Expectations()
-        {
-            {
-                one(messagingService).send(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessageOne)));
-                one(messagingService).send(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessageTwo)));
-            }
-        });
-
         publisher.invoke(INT_VALUE_1);
         publisher.invoke(INT_VALUE_2);
+
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageOne));
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageTwo));
+
     }
 
     @Test
@@ -78,33 +80,30 @@ public final class PublisherFactoryTest
         final MultipleArgMultipleMethodInterface publisher = publisherFactory.createPublisher(MultipleArgMultipleMethodInterface.class);
         final ByteOutputBuffer expectedMessageOne = new ByteArrayOutputBufferImpl(16);
         expectedMessageOne.writeInt(TOPIC_IC);
+        expectedMessageOne.writeLong(0L);
         expectedMessageOne.writeByte(FIRST_METHOD_INDEX);
         expectedMessageOne.writeInt(INT_VALUE_1);
         expectedMessageOne.writeByte(BYTE_VALUE);
 
         final ByteOutputBuffer expectedMessageTwo = new ByteArrayOutputBufferImpl(24);
         expectedMessageTwo.writeInt(TOPIC_IC);
+        expectedMessageTwo.writeLong(1L);
         expectedMessageTwo.writeByte(FIRST_METHOD_INDEX);
         expectedMessageTwo.writeLong(LONG_VALUE);
         expectedMessageTwo.writeInt(INT_VALUE_2);
         expectedMessageTwo.writeByte(BYTE_VALUE);
 
-        mockery.checking(new Expectations()
-        {
-            {
-                one(messagingService).send(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessageOne)));
-                one(messagingService).send(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessageTwo)));
-            }
-        });
-
         publisher.invoke(INT_VALUE_1, BYTE_VALUE);
         publisher.invoke(LONG_VALUE, INT_VALUE_2, BYTE_VALUE);
+
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageOne));
+        messagingService.waitForMessage(TOPIC_IC, aByteOutputBufferMatching(expectedMessageTwo));
     }
 
     @Before
     public void setUp() throws Exception
     {
-        messagingService = mockery.mock(MessagingService.class);
+        messagingService = new RecordingMessagingService();
         topicIdGenerator = mockery.mock(TopicIdGenerator.class);
 
         publisherFactory = new PublisherFactory(messagingService, topicIdGenerator);

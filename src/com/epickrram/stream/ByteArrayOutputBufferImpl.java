@@ -44,7 +44,7 @@ public final class ByteArrayOutputBufferImpl implements ByteOutputBuffer
     public void writeInt(final int value)
     {
         ensureCapacity(4);
-        Bits.writeInt(value, originalBuffer, position);
+        Bits.writeInt(value, currentBuffer, position);
         position += 4;
         count += 4;
     }
@@ -100,6 +100,14 @@ public final class ByteArrayOutputBufferImpl implements ByteOutputBuffer
     public byte[] getBackingArray()
     {
         return currentBuffer;
+    }
+
+    public void copy(final ByteArrayOutputBufferImpl toClone)
+    {
+        this.position = toClone.position;
+        this.count = toClone.count;
+        // TODO ensure currentBuffer is as large as toClone.currentBuffer
+        System.arraycopy(toClone.currentBuffer, 0, currentBuffer, 0, count);
     }
 
     private void ensureCapacity(final int length)
