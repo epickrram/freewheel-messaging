@@ -1,12 +1,13 @@
 package com.epickrram;
 
-import com.epickrram.messaging.MessagingService;
-import com.epickrram.messaging.MessagingServiceImpl;
-import com.epickrram.messaging.Receiver;
-import com.epickrram.remoting.ClassHashcodeTopicIdGenerator;
-import com.epickrram.remoting.PublisherFactory;
-import com.epickrram.remoting.SubscriberFactory;
-import com.epickrram.remoting.TopicIdGenerator;
+import com.epickrram.freewheel.io.ClassnameCodeBook;
+import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.messaging.MessagingServiceImpl;
+import com.epickrram.freewheel.messaging.Receiver;
+import com.epickrram.freewheel.remoting.ClassHashcodeTopicIdGenerator;
+import com.epickrram.freewheel.remoting.PublisherFactory;
+import com.epickrram.freewheel.remoting.SubscriberFactory;
+import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,9 +61,10 @@ public final class IntegrationTest
     @Before
     public void setUp() throws Exception
     {
-        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID);
+        final ClassnameCodeBook codeBook = new ClassnameCodeBook();
+        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, codeBook);
         topicIdGenerator = new ClassHashcodeTopicIdGenerator();
-        publisherFactory = new PublisherFactory(messagingService, topicIdGenerator);
+        publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
         subscriberFactory = new SubscriberFactory();
     }
 
