@@ -10,7 +10,6 @@ import com.epickrram.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -25,7 +24,7 @@ public final class IntegrationTest
     private SubscriberFactory subscriberFactory;
     private TopicIdGenerator topicIdGenerator;
 
-    @Ignore("currently failing - requires reliability features")
+//    @Ignore("currently failing - requires reliability features")
     @Test
     public void shouldSendMessages() throws Exception
     {
