@@ -1,15 +1,37 @@
 package com.epickrram;
 
-import com.epickrram.stream.ByteOutputBuffer;
+import com.epickrram.freewheel.stream.ByteOutputBuffer;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 public final class MatcherFactory
 {
     private MatcherFactory() {}
+
+    public static Matcher<ByteArrayOutputStream> aByteOutputBufferMatching(final ByteArrayOutputStream expected)
+    {
+        return new TypeSafeMatcher<ByteArrayOutputStream>()
+        {
+            private ByteArrayOutputStream actual;
+
+            @Override
+            public boolean matchesSafely(final ByteArrayOutputStream actual)
+            {
+                this.actual = actual;
+                return Arrays.equals(expected.toByteArray(), actual.toByteArray());
+            }
+
+            public void describeTo(final Description description)
+            {
+                description.appendText("Expected buffer " + Arrays.toString(expected.toByteArray()));
+                description.appendText(", got buffer " + Arrays.toString(actual.toByteArray()));
+            }
+        };
+    }
 
     public static Matcher<ByteOutputBuffer> aByteOutputBufferMatching(final ByteOutputBuffer expected)
     {
