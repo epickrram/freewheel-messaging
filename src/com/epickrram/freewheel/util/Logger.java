@@ -48,6 +48,7 @@ public final class Logger
 
     public static Logger getLogger(final Class cls)
     {
-        return new Logger(java.util.logging.Logger.getLogger(cls.getName()));
+        final java.util.logging.Logger delegate = java.util.logging.Logger.getLogger(cls.getName());
+        return new Logger(delegate);
     }
 }

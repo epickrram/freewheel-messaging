@@ -90,7 +90,7 @@ public final class PackerEncoderStream implements EncoderStream
         if(o != null)
         {
             packer.writeString(o.getClass().getName());
-            final Encoder<Object> encoder = codeBook.getEncoder(o.getClass().getName());
+            final Encoder<Object> encoder = codeBook.getTranscoder(o.getClass().getName());
             if(encoder == null)
             {
                 throw new IllegalStateException("Cannot encode object of type: " + o.getClass().getName());

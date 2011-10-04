@@ -150,9 +150,13 @@ public final class PublisherFactory
         {
             methodSource.append("writeByte(").append(parameterName).append(");");
         }
+        else if(String.class == parameterType)
+        {
+            methodSource.append("writeString(").append(parameterName).append(");");
+        }
         else
         {
-            throw new UnsupportedOperationException("Can't encode " + parameterType.getName());
+            methodSource.append("writeObject(").append(parameterName).append(");");
         }
     }
 

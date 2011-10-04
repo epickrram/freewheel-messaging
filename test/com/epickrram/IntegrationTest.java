@@ -4,7 +4,7 @@ import com.epickrram.freewheel.io.ClassnameCodeBook;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.MessagingServiceImpl;
 import com.epickrram.freewheel.messaging.Receiver;
-import com.epickrram.freewheel.remoting.ClassHashcodeTopicIdGenerator;
+import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
 import com.epickrram.freewheel.remoting.PublisherFactory;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
 import com.epickrram.freewheel.remoting.TopicIdGenerator;
@@ -63,7 +63,7 @@ public final class IntegrationTest
     {
         final ClassnameCodeBook codeBook = new ClassnameCodeBook();
         messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, codeBook);
-        topicIdGenerator = new ClassHashcodeTopicIdGenerator();
+        topicIdGenerator = new ClassNameTopicIdGenerator();
         publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
         subscriberFactory = new SubscriberFactory();
     }

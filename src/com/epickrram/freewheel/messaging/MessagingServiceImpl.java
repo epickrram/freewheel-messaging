@@ -57,6 +57,7 @@ public final class MessagingServiceImpl implements MessagingService
     {
         try
         {
+            LOGGER.info("Sending a message of size " + byteArrayOutputStream.size() + " to topic " + topicId);
             final DatagramPacket sendPacket = new DatagramPacket(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
             sendPacket.setSocketAddress(multicastAddress);
             multicastSocket.send(sendPacket);
@@ -134,14 +135,24 @@ public final class MessagingServiceImpl implements MessagingService
                                                                                               recvPacket.getOffset(),
                                                                                               recvPacket.getLength());
 
-                    
+
 
                     final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(getCodeBook(), new MessagePackUnpacker(inputBuffer));
                     final int topicId = decoderStream.readInt();
+
+                    LOGGER.info("Received a message of size " + recvPacket.getLength() + " on topic " + topicId);
                     final Receiver receiver = topicIdToReceiverMap.get(topicId);
+                    LOGGER.info("Sending to receiver: " + receiver);
                     if(receiver != null)
                     {
                         receiver.onMessage(topicId, decoderStream);
+                    }
+                    else
+                    {
+                        for (Map.Entry<Integer, Receiver> integerReceiverEntry : topicIdToReceiverMap.entrySet())
+                        {
+                            LOGGER.info(integerReceiverEntry.getKey() + " -> " + integerReceiverEntry.getValue());
+                        }
                     }
                 }
                 catch (IOException e)

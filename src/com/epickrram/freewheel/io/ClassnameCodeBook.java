@@ -21,8 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClassnameCodeBook implements CodeBook<String>
 {
-    private final Map<String, Encoder> encoderMap = new ConcurrentHashMap<String, Encoder>();
-    private final Map<String, Decoder> decoderMap = new ConcurrentHashMap<String, Decoder>();
+    private final Map<String, Transcoder> transcoderMap = new ConcurrentHashMap<String, Transcoder>();
 
     public ClassnameCodeBook()
     {
@@ -30,36 +29,27 @@ public final class ClassnameCodeBook implements CodeBook<String>
     }
 
     @SuppressWarnings({"unchecked"})
-    public Decoder getDecoder(final String code)
+    public <T> Transcoder<T> getTranscoder(final String code)
     {
-        return decoderMap.get(code);
+        return transcoderMap.get(code);
     }
 
-    @SuppressWarnings({"unchecked"})
-    public Encoder getEncoder(final String code)
+    public <T> void registerTranscoder(final String code, final Transcoder<T> transcoder)
     {
-        return encoderMap.get(code);
-    }
-
-    public void registerHandlers(final String code, final Encoder encoder, final Decoder decoder)
-    {
-        encoderMap.put(code, encoder);
-        decoderMap.put(code, decoder);
+        transcoderMap.put(code, transcoder);
     }
 
     private void registerStandardHandlers()
     {
-        final IntegerTranslator integerTranslator = new IntegerTranslator();
-        registerHandlers(Integer.class.getName(), integerTranslator, integerTranslator);
-        registerHandlers(int.class.getName(), integerTranslator, integerTranslator);
-        final StringTranslator stringTranslator = new StringTranslator();
-        registerHandlers(String.class.getName(), stringTranslator, stringTranslator);
-        final LongTranslator longTranslator = new LongTranslator();
-        registerHandlers(Long.class.getName(), longTranslator, longTranslator);
-        registerHandlers(long.class.getName(), longTranslator, longTranslator);
+        final IntegerTranscoder integerTranscoder = new IntegerTranscoder();
+        registerTranscoder(Integer.class.getName(), integerTranscoder);
+        final StringTranscoder stringTranscoder = new StringTranscoder();
+        registerTranscoder(String.class.getName(), stringTranscoder);
+        final LongTranscoder longTranscoder = new LongTranscoder();
+        registerTranscoder(Long.class.getName(), longTranscoder);
     }
 
-    private static final class StringTranslator implements Encoder<String>, Decoder<String>
+    private static final class StringTranscoder implements Transcoder<String>
     {
         @Override
         public String decode(final DecoderStream decoderStream) throws IOException
@@ -74,7 +64,7 @@ public final class ClassnameCodeBook implements CodeBook<String>
         }
     }
 
-    private static final class IntegerTranslator implements Encoder<Integer>, Decoder<Integer>
+    private static final class IntegerTranscoder implements Transcoder<Integer>
     {
         @Override
         public void encode(final Integer encodable, final EncoderStream encoderStream) throws IOException
@@ -89,7 +79,7 @@ public final class ClassnameCodeBook implements CodeBook<String>
         }
     }
 
-    private static final class LongTranslator implements Encoder<Long>, Decoder<Long>
+    private static final class LongTranscoder implements Transcoder<Long>
     {
         @Override
         public void encode(final Long encodable, final EncoderStream encoderStream) throws IOException

@@ -89,12 +89,12 @@ public final class UnpackerDecoderStream implements DecoderStream
         else
         {
             final String className = unpacker.readString();
-            final Decoder<Object> decoder = codeBook.getDecoder(className);
+            final Transcoder<T> decoder = codeBook.getTranscoder(className);
             if(decoder == null)
             {
                 throw new IllegalStateException("Cannot decode class: " + className);
             }
-            return (T) decoder.decode(this);
+            return decoder.decode(this);
         }
     }
 }

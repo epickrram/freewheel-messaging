@@ -1,6 +1,7 @@
 package com.epickrram.freewheel.remoting;
 
 import com.epickrram.freewheel.messaging.Receiver;
+import com.epickrram.freewheel.util.Logger;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -8,6 +9,7 @@ import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewConstructor;
+import javassist.LoaderClassPath;
 import javassist.Modifier;
 import javassist.NotFoundException;
 
@@ -18,10 +20,26 @@ import java.util.Arrays;
 
 public final class SubscriberFactory
 {
+    private static final Logger LOGGER = Logger.getLogger(SubscriberFactory.class);
+
     public <T> Receiver createReceiver(final Class<T> descriptor, final T instance) throws RemotingException
     {
         final String subscriberClassname = getGeneratedClassname(descriptor);
         final ClassPool classPool = ClassPool.getDefault();
+        LOGGER.info("Adding new classloaders to ClassPool");
+        classPool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
+        classPool.appendClassPath(new LoaderClassPath(ClassLoader.getSystemClassLoader()));
+
+        LOGGER.info("ClassPool: " + classPool.toString());
+        try
+        {
+            LOGGER.info(classPool.find("com.epickrram.freewheel.messaging.Receiver").toString());
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Could not find class Receiver", e);
+        }
+
         classPool.importPackage("com.epickrram.freewheel.messaging");
         classPool.importPackage("com.epickrram.freewheel.io");
         classPool.importPackage("com.epickrram.freewheel.stream");
@@ -132,9 +150,15 @@ public final class SubscriberFactory
             {
                 methodSource.append("final byte ").append((parameterId++)).append(" = decoderStream.readByte();\n");
             }
+            else if (parameterType.equals(String.class))
+            {
+                methodSource.append("final String ").append((parameterId++)).append(" = decoderStream.readString();\n");
+            }
             else
             {
-                throw new RemotingException("Don't know how to read type " + parameterType + " from stream!");
+                methodSource.append("final ").append(parameterType.getName()).append(" ").
+                        append((parameterId++)).append(" = (").append(parameterType.getName()).
+                        append(") decoderStream.readObject();\n");
             }
         }
         methodSource.append("implementation.").append(method.getName()).append("(");
