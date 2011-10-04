@@ -1,5 +1,9 @@
 package com.epickrram.freewheel.io;
 
-public interface Transcoder<T> extends Encoder<T>, Decoder<T>
+import java.io.IOException;
+
+public interface Transcoder<T>
 {
+    void encode(final T encodable, final EncoderStream encoderStream) throws IOException;
+    T decode(final DecoderStream decoderStream) throws IOException;
 }

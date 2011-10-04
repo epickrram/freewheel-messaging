@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 public final class MessagingServiceImpl implements MessagingService
 {
     private static final Logger LOGGER = Logger.getLogger(MessagingServiceImpl.class.getSimpleName());
+    private static final int BUFFER_SIZE = 1024 * 32;
 
     private final MulticastSocket multicastSocket;
     private final SocketAddress multicastAddress;
@@ -57,8 +58,14 @@ public final class MessagingServiceImpl implements MessagingService
     {
         try
         {
-            LOGGER.info("Sending a message of size " + byteArrayOutputStream.size() + " to topic " + topicId);
-            final DatagramPacket sendPacket = new DatagramPacket(byteArrayOutputStream.toByteArray(), 0, byteArrayOutputStream.size());
+            final int dataLength = byteArrayOutputStream.size();
+            LOGGER.info("Sending a message of size " + dataLength + " to topic " + topicId);
+            final DatagramPacket sendPacket = new DatagramPacket(byteArrayOutputStream.toByteArray(), 0, dataLength);
+
+            if(dataLength > BUFFER_SIZE)
+            {
+                LOGGER.warning("Attempting to send message of " + dataLength + " bytes");
+            }
             sendPacket.setSocketAddress(multicastAddress);
             multicastSocket.send(sendPacket);
         }
@@ -112,7 +119,6 @@ public final class MessagingServiceImpl implements MessagingService
 
     private final class MessageHandler implements Runnable
     {
-        private static final int BUFFER_SIZE = 4096;
         private final MulticastSocket socket;
 
         public MessageHandler(final MulticastSocket socket)
@@ -127,7 +133,7 @@ public final class MessagingServiceImpl implements MessagingService
             while(!Thread.currentThread().isInterrupted())
             {
                 final byte[] receiveBuffer = new byte[BUFFER_SIZE];
-                final DatagramPacket recvPacket = new DatagramPacket(receiveBuffer, 0, 4096);
+                final DatagramPacket recvPacket = new DatagramPacket(receiveBuffer, 0, BUFFER_SIZE);
                 try
                 {
                     socket.receive(recvPacket);
