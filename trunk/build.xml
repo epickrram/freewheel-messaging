@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="freewheel" basedir="." default="all">
+
+    <property name="dist.dir" value="build/dist"/>
+    <property name="release.dir" value="build/release"/>
+    <property name="majorVersion" value="0"/>
+    <property name="minorVersion" value="1"/>
+
+    <path id="dist.class.path">
+        <fileset dir="lib/dist">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <path id="build.class.path">
+        <fileset dir="lib/build">
+            <include name="*.jar"/>
+        </fileset>
+        <path refid="dist.class.path"/>
+    </path>
+
+    <target name="clean">
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="compile" depends="clean">
+        <mkdir dir="${dist.dir}/classes"/>
+    	<javac destdir="${dist.dir}/classes" srcdir="src" target="6" source="6">
+    		<classpath refid="build.class.path"/>
+    	</javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <jar destfile="${dist.dir}/freewheel-${majorVersion}.${minorVersion}.jar"
+             basedir="${dist.dir}/classes" manifest="manifest/MANIFEST.MF"/>
+    </target>
+
+    <target name="dist" depends="jar">
+        <delete dir="${release.dir}"/>
+        <mkdir dir="${release.dir}"/>
+        <copy todir="${release.dir}">
+            <fileset dir="${dist.dir}" includes="freewheel-${majorVersion}.${minorVersion}.jar"/>
+        </copy>
+
+        <mkdir dir="${release.dir}/lib"/>
+        <copy todir="${release.dir}/lib">
+            <fileset dir="lib/dist">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+
+        <zip zipfile="${dist.dir}/freewheel-${majorVersion}.${minorVersion}.zip">
+            <fileset dir="${release.dir}" includes="**/*"/>
+        </zip>
+    </target>
+
+    <target name="all" depends="dist"/>
+
+</project>
+	

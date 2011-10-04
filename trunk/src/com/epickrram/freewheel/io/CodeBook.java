@@ -17,6 +17,5 @@ package com.epickrram.freewheel.io;
 
 public interface CodeBook<CodeType>
 {
-    <T> Decoder<T> getDecoder(final CodeType code);
-    <T> Encoder<T> getEncoder(final CodeType code);
+    <T> Transcoder<T> getTranscoder(final CodeType code);
 }
