@@ -59,7 +59,6 @@ public final class MessagingServiceImpl implements MessagingService
         try
         {
             final int dataLength = byteArrayOutputStream.size();
-            LOGGER.info("Sending a message of size " + dataLength + " to topic " + topicId);
             final DatagramPacket sendPacket = new DatagramPacket(byteArrayOutputStream.toByteArray(), 0, dataLength);
 
             if(dataLength > BUFFER_SIZE)
@@ -146,19 +145,10 @@ public final class MessagingServiceImpl implements MessagingService
                     final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(getCodeBook(), new MessagePackUnpacker(inputBuffer));
                     final int topicId = decoderStream.readInt();
 
-                    LOGGER.info("Received a message of size " + recvPacket.getLength() + " on topic " + topicId);
                     final Receiver receiver = topicIdToReceiverMap.get(topicId);
-                    LOGGER.info("Sending to receiver: " + receiver);
                     if(receiver != null)
                     {
                         receiver.onMessage(topicId, decoderStream);
-                    }
-                    else
-                    {
-                        for (Map.Entry<Integer, Receiver> integerReceiverEntry : topicIdToReceiverMap.entrySet())
-                        {
-                            LOGGER.info(integerReceiverEntry.getKey() + " -> " + integerReceiverEntry.getValue());
-                        }
                     }
                 }
                 catch (IOException e)
