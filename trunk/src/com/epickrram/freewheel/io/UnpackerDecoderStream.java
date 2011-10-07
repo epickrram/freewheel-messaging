@@ -75,7 +75,8 @@ public final class UnpackerDecoderStream implements DecoderStream
     @Override
     public String readString() throws IOException
     {
-        return unpacker.readString();
+        final boolean isNull = unpacker.readBoolean();
+        return isNull ? null : unpacker.readString();
     }
 
     @Override

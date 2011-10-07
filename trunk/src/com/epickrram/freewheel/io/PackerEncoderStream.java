@@ -81,6 +81,7 @@ public final class PackerEncoderStream implements EncoderStream
     @Override
     public void writeString(final String s) throws IOException
     {
+        packer.writeBoolean(s == null);
         packer.writeString(s);
     }
 
