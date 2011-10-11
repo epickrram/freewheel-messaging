@@ -2,10 +2,12 @@ package com.epickrram.freewheel.remoting;
 
 import com.epickrram.freewheel.io.CodeBook;
 import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.util.Logger;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtNewMethod;
+import javassist.LoaderClassPath;
 import javassist.Modifier;
 import javassist.NotFoundException;
 import javassist.bytecode.ClassFile;
@@ -18,6 +20,7 @@ import java.util.Arrays;
 
 public final class PublisherFactory
 {
+    private static final Logger LOGGER = Logger.getLogger(PublisherFactory.class);
     private final MessagingService messagingService;
     private final TopicIdGenerator topicIdGenerator;
     private final CodeBook<String> codeBook;
@@ -36,11 +39,16 @@ public final class PublisherFactory
         {
             final String generatedClassname = getGeneratedClassname(descriptor);
             final ClassPool classPool = ClassPool.getDefault();
+            classPool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
+            classPool.appendClassPath(new LoaderClassPath(ClassLoader.getSystemClassLoader()));
+
             classPool.importPackage("com.epickrram.freewheel.messaging");
             classPool.importPackage("com.epickrram.freewheel.stream");
             classPool.importPackage("com.epickrram.freewheel.io");
+            classPool.importPackage("com.epickrram.freewheel.remoting");
             classPool.importPackage("org.msgpack.packer");
             classPool.importPackage("java.io");
+            LOGGER.info("AbstractPublisher: " + classPool.find("com.epickrram.freewheel.remoting.AbstractPublisher"));
             final CtClass superClass = classPool.get("com.epickrram.freewheel.remoting.AbstractPublisher");
             final CtClass ctClass = classPool.makeClass(generatedClassname, superClass);
             final ClassFile classFile = ctClass.getClassFile();

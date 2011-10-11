@@ -41,7 +41,7 @@ public final class MessagingServiceImpl implements MessagingService
         try
         {
             multicastAddress = new InetSocketAddress(InetAddress.getByName(ipAddress), port);
-            multicastSocket = new MulticastSocket(port);
+            multicastSocket = createMulticastSocket(port);
             listenerThread = new Thread(new MessageHandler(multicastSocket), "MessageHandler");
         }
         catch (SocketException e)
@@ -61,7 +61,7 @@ public final class MessagingServiceImpl implements MessagingService
             final int dataLength = byteArrayOutputStream.size();
             final DatagramPacket sendPacket = new DatagramPacket(byteArrayOutputStream.toByteArray(), 0, dataLength);
 
-            if(dataLength > BUFFER_SIZE)
+            if (dataLength > BUFFER_SIZE)
             {
                 LOGGER.warning("Attempting to send message of " + dataLength + " bytes");
             }
@@ -116,6 +116,32 @@ public final class MessagingServiceImpl implements MessagingService
         }
     }
 
+    private MulticastSocket createMulticastSocket(final int port) throws IOException
+    {
+        final MulticastSocket socket = new MulticastSocket(port);
+        int suppliedBufferSize = 1024;
+        do
+        {
+            suppliedBufferSize += 1024;
+            socket.setSendBufferSize(suppliedBufferSize);
+
+        } while (socket.getSendBufferSize() == suppliedBufferSize);
+
+        suppliedBufferSize = 1024;
+        do
+        {
+            suppliedBufferSize += 1024;
+            socket.setReceiveBufferSize(suppliedBufferSize);
+
+        } while (socket.getReceiveBufferSize() == suppliedBufferSize);
+
+
+        LOGGER.info(String.format("Allocated socket buffer sizes [send = %d, receive = %d]",
+                socket.getSendBufferSize(), socket.getReceiveBufferSize()));
+
+        return socket;
+    }
+
     private final class MessageHandler implements Runnable
     {
         private final MulticastSocket socket;
@@ -129,7 +155,7 @@ public final class MessagingServiceImpl implements MessagingService
         {
             LOGGER.info("MessageHandler Thread listening.");
             listenerThreadStartedLatch.countDown();
-            while(!Thread.currentThread().isInterrupted())
+            while (!Thread.currentThread().isInterrupted())
             {
                 final byte[] receiveBuffer = new byte[BUFFER_SIZE];
                 final DatagramPacket recvPacket = new DatagramPacket(receiveBuffer, 0, BUFFER_SIZE);
@@ -137,23 +163,22 @@ public final class MessagingServiceImpl implements MessagingService
                 {
                     socket.receive(recvPacket);
                     final ByteArrayInputStream inputBuffer = new ByteArrayInputStream(recvPacket.getData(),
-                                                                                              recvPacket.getOffset(),
-                                                                                              recvPacket.getLength());
-
+                            recvPacket.getOffset(),
+                            recvPacket.getLength());
 
 
                     final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(getCodeBook(), new MessagePackUnpacker(inputBuffer));
                     final int topicId = decoderStream.readInt();
 
                     final Receiver receiver = topicIdToReceiverMap.get(topicId);
-                    if(receiver != null)
+                    if (receiver != null)
                     {
                         receiver.onMessage(topicId, decoderStream);
                     }
                 }
                 catch (IOException e)
                 {
-                    if(!isShuttingDown)
+                    if (!isShuttingDown)
                     {
                         LOGGER.log(Level.WARNING, "Failed to receive datagram packet", e);
                     }
