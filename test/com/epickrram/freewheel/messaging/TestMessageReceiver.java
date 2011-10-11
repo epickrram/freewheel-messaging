@@ -1,13 +1,12 @@
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.ClassnameCodeBook;
+import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import junit.framework.Assert;
 import org.msgpack.packer.MessagePackPacker;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;

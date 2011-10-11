@@ -13,7 +13,7 @@ Copyright 2011 Mark Price
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-package com.epickrram.freewheel.io;
+package com.epickrram.freewheel.protocol;
 
 public interface CodeBook<CodeType>
 {

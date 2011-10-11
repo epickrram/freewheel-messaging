@@ -15,6 +15,8 @@ Copyright 2011 Mark Price
  */
 package com.epickrram.freewheel.io;
 
+import com.epickrram.freewheel.protocol.CodeBook;
+import com.epickrram.freewheel.protocol.Transcoder;
 import org.msgpack.unpacker.Unpacker;
 
 import java.io.IOException;

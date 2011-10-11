@@ -1,6 +1,6 @@
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.CodeBook;
+import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import org.msgpack.unpacker.MessagePackUnpacker;
 
