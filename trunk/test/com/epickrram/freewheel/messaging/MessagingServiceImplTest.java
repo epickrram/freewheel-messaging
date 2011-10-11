@@ -1,6 +1,6 @@
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.ClassnameCodeBook;
+import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import org.junit.After;
 import org.junit.Before;

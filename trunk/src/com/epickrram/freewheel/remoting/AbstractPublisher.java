@@ -1,6 +1,6 @@
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.io.CodeBook;
+import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.messaging.MessagingService;
 
 import java.io.ByteArrayOutputStream;

@@ -1,6 +1,6 @@
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.io.ClassnameCodeBook;
+import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import com.epickrram.freewheel.messaging.Receiver;

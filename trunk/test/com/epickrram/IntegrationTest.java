@@ -1,6 +1,6 @@
 package com.epickrram;
 
-import com.epickrram.freewheel.io.ClassnameCodeBook;
+import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.MessagingServiceImpl;
 import com.epickrram.freewheel.messaging.Receiver;

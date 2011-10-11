@@ -1,4 +1,7 @@
-package com.epickrram.freewheel.io;
+package com.epickrram.freewheel.protocol;
+
+import com.epickrram.freewheel.io.DecoderStream;
+import com.epickrram.freewheel.io.EncoderStream;
 
 import java.io.IOException;
 

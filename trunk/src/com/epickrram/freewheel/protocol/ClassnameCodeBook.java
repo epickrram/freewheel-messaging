@@ -13,9 +13,15 @@ Copyright 2011 Mark Price
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-package com.epickrram.freewheel.io;
+package com.epickrram.freewheel.protocol;
+
+import com.epickrram.freewheel.io.DecoderStream;
+import com.epickrram.freewheel.io.EncoderStream;
+import com.epickrram.freewheel.protocol.transcoder.ListTranscoder;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,6 +53,13 @@ public final class ClassnameCodeBook implements CodeBook<String>
         registerTranscoder(String.class.getName(), stringTranscoder);
         final LongTranscoder longTranscoder = new LongTranscoder();
         registerTranscoder(Long.class.getName(), longTranscoder);
+        registerTranscoder(ArrayList.class.getName(), new ListTranscoder<ArrayList>(ArrayList.class));
+        registerTranscoder(LinkedList.class.getName(), new ListTranscoder<LinkedList>(LinkedList.class));
+
+        registerTranscoder(Byte.class.getName(), new ByteTranscoder());
+        registerTranscoder(Boolean.class.getName(), new BooleanTranscoder());
+        registerTranscoder(Float.class.getName(), new FloatTranscoder());
+        registerTranscoder(Double.class.getName(), new DoubleTranscoder());
     }
 
     private static final class StringTranscoder implements Transcoder<String>
@@ -91,6 +104,66 @@ public final class ClassnameCodeBook implements CodeBook<String>
         public Long decode(final DecoderStream decoderStream) throws IOException
         {
             return decoderStream.readLong();
+        }
+    }
+
+    private static final class ByteTranscoder implements Transcoder<Byte>
+    {
+        @Override
+        public void encode(final Byte encodable, final EncoderStream encoderStream) throws IOException
+        {
+            encoderStream.writeByte(encodable);
+        }
+
+        @Override
+        public Byte decode(final DecoderStream decoderStream) throws IOException
+        {
+            return decoderStream.readByte();
+        }
+    }
+
+    private static final class BooleanTranscoder implements Transcoder<Boolean>
+    {
+        @Override
+        public void encode(final Boolean encodable, final EncoderStream encoderStream) throws IOException
+        {
+            encoderStream.writeBoolean(encodable);
+        }
+
+        @Override
+        public Boolean decode(final DecoderStream decoderStream) throws IOException
+        {
+            return decoderStream.readBoolean();
+        }
+    }
+
+    private static final class FloatTranscoder implements Transcoder<Float>
+    {
+        @Override
+        public void encode(final Float encodable, final EncoderStream encoderStream) throws IOException
+        {
+            encoderStream.writeFloat(encodable);
+        }
+
+        @Override
+        public Float decode(final DecoderStream decoderStream) throws IOException
+        {
+            return decoderStream.readFloat();
+        }
+    }
+
+    private static final class DoubleTranscoder implements Transcoder<Double>
+    {
+        @Override
+        public void encode(final Double encodable, final EncoderStream encoderStream) throws IOException
+        {
+            encoderStream.writeDouble(encodable);
+        }
+
+        @Override
+        public Double decode(final DecoderStream decoderStream) throws IOException
+        {
+            return decoderStream.readDouble();
         }
     }
 }
