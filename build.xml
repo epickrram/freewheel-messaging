@@ -26,7 +26,7 @@
 
     <target name="compile" depends="clean">
         <mkdir dir="${dist.dir}/classes"/>
-    	<javac destdir="${dist.dir}/classes" srcdir="src" target="6" source="6">
+    	<javac destdir="${dist.dir}/classes" srcdir="src" target="6" source="6"  debug="true" debuglevel="lines,vars,source">
     		<classpath refid="build.class.path"/>
     	</javac>
     </target>
