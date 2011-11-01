@@ -15,7 +15,9 @@ Copyright 2011 Mark Price
  */
 package com.epickrram.freewheel.protocol;
 
-public interface CodeBook<CodeType>
+public interface CodeBook
 {
-    <T> Transcoder<T> getTranscoder(final CodeType code);
+    <T> Translator<T> getTranslator(final int code);
+    <T> Translator<T> getTranslator(final Class<T> cls);
+    <T> int getTranslatorCode(final Class<T> cls);
 }

@@ -1,7 +1,7 @@
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.PackerEncoderStream;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +22,7 @@ public final class MessagingServiceImplTest
     public void shouldSendMulticastMessageToConfiguredAddress() throws Exception
     {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final PackerEncoderStream encoderStream = new PackerEncoderStream(new ClassnameCodeBook(), new MessagePackPacker(outputStream));
+        final PackerEncoderStream encoderStream = new PackerEncoderStream(new CodeBookImpl(), new MessagePackPacker(outputStream));
         encoderStream.writeInt(TOPIC_ID);
         encoderStream.writeByteArray(MESSAGE_PAYLOAD, 0, MESSAGE_PAYLOAD.length);
         messageListener.startListening();
@@ -36,7 +36,7 @@ public final class MessagingServiceImplTest
     {
         final TestMessageReceiver testMessageReceiver = new TestMessageReceiver();
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final PackerEncoderStream encoderStream = new PackerEncoderStream(new ClassnameCodeBook(), new MessagePackPacker(outputStream));
+        final PackerEncoderStream encoderStream = new PackerEncoderStream(new CodeBookImpl(), new MessagePackPacker(outputStream));
         encoderStream.writeInt(TOPIC_ID);
         encoderStream.writeByteArray(MESSAGE_PAYLOAD, 0, MESSAGE_PAYLOAD.length);
 
@@ -53,7 +53,7 @@ public final class MessagingServiceImplTest
     @Before
     public void setUp() throws Exception
     {
-        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, new ClassnameCodeBook());
+        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, new CodeBookImpl());
         messageListener = new TestMessageListener(MULTICAST_ADDR, PORT_ID);
     }
 

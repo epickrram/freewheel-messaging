@@ -16,17 +16,19 @@ Copyright 2011 Mark Price
 package com.epickrram.freewheel.io;
 
 import com.epickrram.freewheel.protocol.CodeBook;
-import com.epickrram.freewheel.protocol.Transcoder;
+import com.epickrram.freewheel.protocol.Translator;
 import org.msgpack.packer.Packer;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 public final class PackerEncoderStream implements EncoderStream
 {
-    private final CodeBook<String> codeBook;
+    private final CodeBook codeBook;
     private final Packer packer;
 
-    public PackerEncoderStream(final CodeBook<String> codeBook, final Packer packer)
+    public PackerEncoderStream(final CodeBook codeBook, final Packer packer)
     {
         this.codeBook = codeBook;
         this.packer = packer;
@@ -91,18 +93,48 @@ public final class PackerEncoderStream implements EncoderStream
         }
     }
 
+    @SuppressWarnings({"unchecked"})
     public <T> void writeObject(final T o) throws IOException
     {
         packer.writeBoolean(o == null);
         if(o != null)
         {
-            packer.writeString(o.getClass().getName());
-            final Transcoder<T> transcoder = codeBook.getTranscoder(o.getClass().getName());
-            if(transcoder == null)
+            packer.writeInt(codeBook.getTranslatorCode(o.getClass()));
+            final Translator<T> translator = (Translator<T>) codeBook.getTranslator(o.getClass());
+            if(translator == null)
             {
                 throw new IllegalStateException("Cannot encode object of type: " + o.getClass().getName());
             }
-            transcoder.encode(o, this);
+            translator.encode(o, this);
+        }
+    }
+
+    @Override
+    public <T> void writeCollection(final Collection<T> collection) throws IOException
+    {
+        packer.writeBoolean(collection == null);
+        if(collection != null)
+        {
+            packer.writeInt(collection.size());
+            for (T t : collection)
+            {
+                writeObject(t);
+            }
+        }
+    }
+
+    @Override
+    public <K, V> void writeMap(final Map<K, V> collection) throws IOException
+    {
+        packer.writeBoolean(collection == null);
+        if(collection != null)
+        {
+            packer.writeInt(collection.size());
+            for (Map.Entry<K, V> entry : collection.entrySet())
+            {
+                writeObject(entry.getKey());
+                writeObject(entry.getValue());
+            }
         }
     }
 }

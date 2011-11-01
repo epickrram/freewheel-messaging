@@ -16,17 +16,19 @@ Copyright 2011 Mark Price
 package com.epickrram.freewheel.io;
 
 import com.epickrram.freewheel.protocol.CodeBook;
-import com.epickrram.freewheel.protocol.Transcoder;
+import com.epickrram.freewheel.protocol.Translator;
 import org.msgpack.unpacker.Unpacker;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 public final class UnpackerDecoderStream implements DecoderStream
 {
-    private final CodeBook<String> codeBook;
+    private final CodeBook codeBook;
     private final Unpacker unpacker;
 
-    public UnpackerDecoderStream(final CodeBook<String> codeBook, final Unpacker unpacker)
+    public UnpackerDecoderStream(final CodeBook codeBook, final Unpacker unpacker)
     {
         this.codeBook = codeBook;
         this.unpacker = unpacker;
@@ -91,13 +93,41 @@ public final class UnpackerDecoderStream implements DecoderStream
         }
         else
         {
-            final String className = unpacker.readString();
-            final Transcoder<T> decoder = codeBook.getTranscoder(className);
+            final int codeBookId = unpacker.readInt();
+            final Translator<T> decoder = codeBook.getTranslator(codeBookId);
             if(decoder == null)
             {
-                throw new IllegalStateException("Cannot decode class: " + className);
+                throw new IllegalStateException("Cannot decode class with id: " + codeBookId);
             }
             return decoder.decode(this);
+        }
+    }
+
+    @Override
+    public <T> void readCollection(final Collection<T> collection) throws IOException
+    {
+        final boolean isNull = unpacker.readBoolean();
+        if(!isNull)
+        {
+            final int collectionSize = unpacker.readInt();
+            for(int i = collectionSize; i != 0; i--)
+            {
+                collection.add(this.<T>readObject());
+            }
+        }
+    }
+
+    @Override
+    public <K, V> void readMap(final Map<K, V> map) throws IOException
+    {
+        final boolean isNull = unpacker.readBoolean();
+        if(!isNull)
+        {
+            final int mapSize = unpacker.readInt();
+            for(int i = mapSize; i != 0; i--)
+            {
+                map.put(this.<K>readObject(), this.<V>readObject());
+            }
         }
     }
 }

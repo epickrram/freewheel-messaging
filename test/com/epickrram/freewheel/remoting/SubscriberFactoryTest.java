@@ -1,9 +1,9 @@
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import com.epickrram.freewheel.messaging.Receiver;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
@@ -19,11 +19,11 @@ import java.io.ByteArrayOutputStream;
 @RunWith(JMock.class)
 public final class SubscriberFactoryTest
 {
-    private Mockery mockery = new Mockery();
-    private SubscriberFactory subscriberFactory;
     private static final int INT_VALUE = 89237423;
     private static final byte BYTE_VALUE = (byte) 126;
     private static final long LONG_VALUE = 238472394L;
+    private Mockery mockery = new Mockery();
+    private SubscriberFactory subscriberFactory;
 
     @Test
     public void shouldCreateReceiverForSingleNoArgsMethodInterface() throws Exception
@@ -72,7 +72,7 @@ public final class SubscriberFactoryTest
         final Receiver receiver = subscriberFactory.createReceiver(MethodWithArgsInterface.class, implementation);
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        final PackerEncoderStream encoderStream = new PackerEncoderStream(new ClassnameCodeBook(), new MessagePackPacker(outputStream));
+        final PackerEncoderStream encoderStream = new PackerEncoderStream(new CodeBookImpl(), new MessagePackPacker(outputStream));
         encoderStream.writeByte((byte) 0);
         encoderStream.writeInt(INT_VALUE);
         encoderStream.writeByte(BYTE_VALUE);
@@ -99,7 +99,7 @@ public final class SubscriberFactoryTest
     private UnpackerDecoderStream decoderStreamFor(final byte[] payload)
     {
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(payload, 0, payload.length);
-        return new UnpackerDecoderStream(new ClassnameCodeBook(), new MessagePackUnpacker(inputStream));
+        return new UnpackerDecoderStream(new CodeBookImpl(), new MessagePackUnpacker(inputStream));
     }
 
     private interface MethodWithArgsInterface

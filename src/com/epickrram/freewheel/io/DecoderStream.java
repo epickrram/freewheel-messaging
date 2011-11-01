@@ -16,6 +16,8 @@ Copyright 2011 Mark Price
 package com.epickrram.freewheel.io;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 public interface DecoderStream
 {
@@ -28,4 +30,6 @@ public interface DecoderStream
     public byte[] readByteArray() throws IOException;
     public String readString() throws IOException;
     public <T> T readObject() throws IOException;
+    public <T> void readCollection(final Collection<T> collection) throws IOException;
+    public <K, V> void readMap(final Map<K, V> map) throws IOException;
 }

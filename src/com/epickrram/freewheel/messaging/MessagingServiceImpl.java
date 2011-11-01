@@ -30,11 +30,11 @@ public final class MessagingServiceImpl implements MessagingService
     private final Map<Integer, Receiver> topicIdToReceiverMap = new ConcurrentHashMap<Integer, Receiver>();
     private final Thread listenerThread;
     private final CountDownLatch listenerThreadStartedLatch = new CountDownLatch(1);
-    private final CodeBook<String> codeBook;
+    private final CodeBook codeBook;
 
     private volatile boolean isShuttingDown = false;
 
-    public MessagingServiceImpl(final String ipAddress, final int port, final CodeBook<String> codeBook)
+    public MessagingServiceImpl(final String ipAddress, final int port, final CodeBook codeBook)
     {
         this.ipAddress = ipAddress;
         this.codeBook = codeBook;
@@ -188,7 +188,7 @@ public final class MessagingServiceImpl implements MessagingService
         }
     }
 
-    private CodeBook<String> getCodeBook()
+    private CodeBook getCodeBook()
     {
         return codeBook;
     }

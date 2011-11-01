@@ -1,10 +1,9 @@
 package com.epickrram.freewheel;
 
-import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.io.EncoderStream;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
-import com.epickrram.freewheel.protocol.ClassnameCodeBook;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.msgpack.packer.MessagePackPacker;
@@ -14,15 +13,21 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public final class ProtocolTest
 {
-    private ClassnameCodeBook codeBook;
+    private CodeBookImpl codeBook;
     private EncoderStream encoderStream;
     private ByteArrayOutputStream outputStream;
 
@@ -38,7 +43,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleWrapperByte() throws Exception
     {
-        assertTranscoding(Byte.valueOf((byte) 127));
+        assertTranslation(Byte.valueOf((byte) 127));
     }
 
     @Test
@@ -53,7 +58,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleWrapperBoolean() throws Exception
     {
-        assertTranscoding(Boolean.valueOf(true));
+        assertTranslation(Boolean.valueOf(true));
     }
 
     @Test
@@ -68,7 +73,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleInteger() throws Exception
     {
-        assertTranscoding(Integer.MAX_VALUE);
+        assertTranslation(Integer.MAX_VALUE);
     }
 
     @Test
@@ -83,7 +88,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleLong() throws Exception
     {
-        assertTranscoding(Long.MIN_VALUE);
+        assertTranslation(Long.MIN_VALUE);
     }
 
     @Test
@@ -98,7 +103,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleFloat() throws Exception
     {
-        assertTranscoding(Float.MAX_VALUE);
+        assertTranslation(Float.MAX_VALUE);
     }
 
     @Test
@@ -113,7 +118,7 @@ public final class ProtocolTest
     @Test
     public void shouldHandleDouble() throws Exception
     {
-        assertTranscoding(Double.MIN_VALUE);
+        assertTranslation(Double.MIN_VALUE);
     }
 
     @Test
@@ -154,39 +159,94 @@ public final class ProtocolTest
     }
 
     @Test
-    public void shouldHandleArrayListOfObjects() throws Exception
+    public void shouldHandleListOfObjects() throws Exception
     {
-        final List<TestObject> value = new ArrayList<TestObject>(3);
-        value.add(new TestObject(1, "foo"));
-        value.add(new TestObject(2, "bar"));
-        value.add(new TestObject(5, "boo"));
+        final List<TestObject> input = new ArrayList<TestObject>(3);
+        final List<TestObject> output = new ArrayList<TestObject>(3);
 
-        assertTranscoding(value);
+        input.add(new TestObject(1, "foo"));
+        input.add(new TestObject(2, "bar"));
+        input.add(new TestObject(5, "boo"));
+
+        assertCollectionTranslation(input, output);
     }
 
     @Test
-    public void shouldHandleLinkedListOfObjects() throws Exception
+    public void shouldHandleSetOfObjects() throws Exception
     {
-        final List<TestObject> value = new LinkedList<TestObject>();
-        value.add(new TestObject(1, "foo"));
-        value.add(new TestObject(2, "bar"));
-        value.add(new TestObject(5, "boo"));
+        final Set<TestObject> input = new HashSet<TestObject>();
+        final Set<TestObject> output = new HashSet<TestObject>();
+        input.add(new TestObject(1, "foo"));
+        input.add(new TestObject(2, "bar"));
+        input.add(new TestObject(5, "boo"));
 
-        assertTranscoding(value);
+        assertCollectionTranslation(input, output);
     }
 
-    // TODO null tests for Wrapper classes + String
+    @Test
+    public void shouldHandleMapOfObjects() throws Exception
+    {
+        final Map<Long, String> input = new HashMap<Long, String>();
+        final Map<Long, String> output = new HashMap<Long, String>();
+        input.put(7L, "foo");
+        input.put(11L, "bar");
+        input.put(13L, "foobar");
+
+        assertMapTranslation(input, output);
+    }
+
+    @Test
+    public void shouldHandleNullObject() throws Exception
+    {
+        assertTranslation(null);
+    }
+
+    @Test
+    public void shouldHandleNullCollection() throws Exception
+    {
+        final List<String> output = new ArrayList<String>();
+
+        encoderStream.writeCollection(null);
+        getDecoderStream().readCollection(output);
+        assertThat(output, is(equalTo(Collections.<String>emptyList())));
+    }
+
+    @Test
+    public void shouldHandleNullMap() throws Exception
+    {
+        final Map<Long, String> output = new HashMap<Long, String>();
+
+        encoderStream.writeMap(null);
+        getDecoderStream().readMap(output);
+        assertThat(output, is(equalTo(Collections.<Long, String>emptyMap())));
+    }
 
     @Before
     public void setUp() throws Exception
     {
-        codeBook = new ClassnameCodeBook();
+        codeBook = new CodeBookImpl();
         outputStream = new ByteArrayOutputStream(2048);
         encoderStream = new PackerEncoderStream(codeBook, new MessagePackPacker(outputStream));
-        codeBook.registerTranscoder(TestObject.class.getName(), new TestObject.Transcoder());
+        new CodeBookImpl.CodeBookRegistryImpl(codeBook).registerTranslatable(TestObject.class);
     }
 
-    private void assertTranscoding(final Object value) throws IOException
+    private void assertCollectionTranslation(final Collection<TestObject> input,
+                                             final Collection<TestObject> output) throws IOException
+    {
+        encoderStream.writeCollection(input);
+        getDecoderStream().readCollection(output);
+        assertThat(output, is(equalTo(input)));
+    }
+
+    private <K, V> void assertMapTranslation(final Map<K, V> input,
+                                             final Map<K, V> output) throws IOException
+    {
+        encoderStream.writeMap(input);
+        getDecoderStream().readMap(output);
+        assertThat(output, is(equalTo(input)));
+    }
+
+    private void assertTranslation(final Object value) throws IOException
     {
         encoderStream.writeObject(value);
 
@@ -199,56 +259,4 @@ public final class ProtocolTest
                 new MessagePackUnpacker(new ByteArrayInputStream(outputStream.toByteArray())));
     }
 
-    private static final class TestObject
-    {
-        private final int foo;
-        private final String bar;
-
-        private TestObject(final int foo, final String bar)
-        {
-            this.foo = foo;
-            this.bar = bar;
-        }
-
-        @Override
-        public boolean equals(final Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            final TestObject that = (TestObject) o;
-
-            if (foo != that.foo) return false;
-            if (bar != null ? !bar.equals(that.bar) : that.bar != null) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = foo;
-            result = 31 * result + (bar != null ? bar.hashCode() : 0);
-            return result;
-        }
-
-        public static final class Transcoder implements com.epickrram.freewheel.protocol.Transcoder<TestObject>
-        {
-            @Override
-            public void encode(final TestObject encodable, final EncoderStream encoderStream) throws IOException
-            {
-                encoderStream.writeInt(encodable.foo);
-                encoderStream.writeString(encodable.bar);
-            }
-
-            @Override
-            public TestObject decode(final DecoderStream decoderStream) throws IOException
-            {
-                final int foo = decoderStream.readInt();
-                final String bar = decoderStream.readString();
-
-                return new TestObject(foo, bar);
-            }
-        }
-    }
 }
