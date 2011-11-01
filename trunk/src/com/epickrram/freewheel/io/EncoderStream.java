@@ -16,6 +16,8 @@ Copyright 2011 Mark Price
 package com.epickrram.freewheel.io;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 public interface EncoderStream
 {
@@ -29,4 +31,6 @@ public interface EncoderStream
     public void writeByteArray(final byte[] b, int off, int len) throws IOException;
     public void writeString(final String s) throws IOException;
     public <T> void writeObject(final T o) throws IOException;
+    public <T> void writeCollection(final Collection<T> collection) throws IOException;
+    public <K, V> void writeMap(final Map<K, V> collection) throws IOException;
 }

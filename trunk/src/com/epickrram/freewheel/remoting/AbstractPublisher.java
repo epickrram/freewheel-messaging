@@ -10,9 +10,9 @@ public abstract class AbstractPublisher
     private static final int DEFAULT_BUFFER_SIZE = 2048;
     private final MessagingService messagingService;
     private final int topicId;
-    private final CodeBook<String> codeBook;
+    private final CodeBook codeBook;
 
-    public AbstractPublisher(final MessagingService messagingService, final int topicId, final CodeBook<String> codeBook)
+    public AbstractPublisher(final MessagingService messagingService, final int topicId, final CodeBook codeBook)
     {
         this.messagingService = messagingService;
         this.topicId = topicId;
@@ -34,7 +34,7 @@ public abstract class AbstractPublisher
         return new ByteArrayOutputStream(DEFAULT_BUFFER_SIZE);
     }
 
-    protected CodeBook<String> getCodeBook()
+    protected CodeBook getCodeBook()
     {
         return codeBook;
     }

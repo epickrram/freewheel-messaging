@@ -1,8 +1,7 @@
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.messaging.MessagingService;
-import com.epickrram.freewheel.util.Logger;
+import com.epickrram.freewheel.protocol.CodeBook;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -20,12 +19,11 @@ import java.util.Arrays;
 
 public final class PublisherFactory
 {
-    private static final Logger LOGGER = Logger.getLogger(PublisherFactory.class);
     private final MessagingService messagingService;
     private final TopicIdGenerator topicIdGenerator;
-    private final CodeBook<String> codeBook;
+    private final CodeBook codeBook;
 
-    public PublisherFactory(final MessagingService messagingService, final TopicIdGenerator topicIdGenerator, final CodeBook<String> codeBook)
+    public PublisherFactory(final MessagingService messagingService, final TopicIdGenerator topicIdGenerator, final CodeBook codeBook)
     {
         this.messagingService = messagingService;
         this.topicIdGenerator = topicIdGenerator;
@@ -38,7 +36,7 @@ public final class PublisherFactory
         try
         {
             final String generatedClassname = getGeneratedClassname(descriptor);
-            final ClassPool classPool = ClassPool.getDefault();
+            final ClassPool classPool = new ClassPool(ClassPool.getDefault());
             classPool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
             classPool.appendClassPath(new LoaderClassPath(ClassLoader.getSystemClassLoader()));
 
@@ -48,7 +46,6 @@ public final class PublisherFactory
             classPool.importPackage("com.epickrram.freewheel.remoting");
             classPool.importPackage("org.msgpack.packer");
             classPool.importPackage("java.io");
-            LOGGER.info("AbstractPublisher: " + classPool.find("com.epickrram.freewheel.remoting.AbstractPublisher"));
             final CtClass superClass = classPool.get("com.epickrram.freewheel.remoting.AbstractPublisher");
             final CtClass ctClass = classPool.makeClass(generatedClassname, superClass);
             final ClassFile classFile = ctClass.getClassFile();

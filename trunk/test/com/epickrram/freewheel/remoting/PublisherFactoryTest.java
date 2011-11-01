@@ -1,8 +1,9 @@
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.protocol.CodeBook;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
@@ -30,7 +31,7 @@ public final class PublisherFactoryTest
     private MessagingService messagingService;
     private TopicIdGenerator topicIdGenerator;
     private PublisherFactory publisherFactory;
-    private ClassnameCodeBook codeBook;
+    private CodeBook codeBook;
 
     @Test
     public void shouldGeneratePublisherForSingleNoArgsMethodInterface() throws Exception
@@ -126,7 +127,7 @@ public final class PublisherFactoryTest
                 will(returnValue(TOPIC_IC));
             }
         });
-        codeBook = new ClassnameCodeBook();
+        codeBook = new CodeBookImpl();
     }
 
     private PackerEncoderStream encoderFor(final ByteArrayOutputStream expectedMessage)

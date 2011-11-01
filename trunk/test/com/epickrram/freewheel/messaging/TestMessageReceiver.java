@@ -1,8 +1,8 @@
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.protocol.ClassnameCodeBook;
 import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.io.PackerEncoderStream;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
 import junit.framework.Assert;
 import org.msgpack.packer.MessagePackPacker;
 
@@ -33,7 +33,7 @@ public final class TestMessageReceiver implements Receiver
             }
         }
         final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        final PackerEncoderStream encoderStream = new PackerEncoderStream(new ClassnameCodeBook(), new MessagePackPacker(buffer));
+        final PackerEncoderStream encoderStream = new PackerEncoderStream(new CodeBookImpl(), new MessagePackPacker(buffer));
 
         try
         {
