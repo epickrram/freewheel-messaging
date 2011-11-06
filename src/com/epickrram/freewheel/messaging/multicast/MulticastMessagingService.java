@@ -1,5 +1,8 @@
-package com.epickrram.freewheel.messaging;
+package com.epickrram.freewheel.messaging.multicast;
 
+import com.epickrram.freewheel.messaging.MessagingException;
+import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.messaging.Receiver;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import org.msgpack.unpacker.MessagePackUnpacker;
@@ -19,9 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class MessagingServiceImpl implements MessagingService
+public final class MulticastMessagingService implements MessagingService
 {
-    private static final Logger LOGGER = Logger.getLogger(MessagingServiceImpl.class.getSimpleName());
+    private static final Logger LOGGER = Logger.getLogger(MulticastMessagingService.class.getSimpleName());
     private static final int BUFFER_SIZE = 1024 * 32;
 
     private final MulticastSocket multicastSocket;
@@ -34,7 +37,7 @@ public final class MessagingServiceImpl implements MessagingService
 
     private volatile boolean isShuttingDown = false;
 
-    public MessagingServiceImpl(final String ipAddress, final int port, final CodeBook codeBook)
+    public MulticastMessagingService(final String ipAddress, final int port, final CodeBook codeBook)
     {
         this.ipAddress = ipAddress;
         this.codeBook = codeBook;

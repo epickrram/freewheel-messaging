@@ -1,6 +1,7 @@
-package com.epickrram.freewheel.messaging;
+package com.epickrram.freewheel.messaging.multicast;
 
 import com.epickrram.freewheel.io.PackerEncoderStream;
+import com.epickrram.freewheel.messaging.TestMessageReceiver;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -9,13 +10,13 @@ import org.msgpack.packer.MessagePackPacker;
 
 import java.io.ByteArrayOutputStream;
 
-public final class MessagingServiceImplTest
+public final class MulticastMessagingServiceTest
 {
     private static final int TOPIC_ID = 2384734;
     private static final byte[] MESSAGE_PAYLOAD = new byte[] {9, 8, 7, 6, 5, 4};
     private static final int PORT_ID = 8765;
     private static final String MULTICAST_ADDR = "239.0.0.1";
-    private MessagingServiceImpl messagingService;
+    private MulticastMessagingService multicastMessagingService;
     private TestMessageListener messageListener;
 
     @Test
@@ -26,7 +27,7 @@ public final class MessagingServiceImplTest
         encoderStream.writeInt(TOPIC_ID);
         encoderStream.writeByteArray(MESSAGE_PAYLOAD, 0, MESSAGE_PAYLOAD.length);
         messageListener.startListening();
-        messagingService.send(TOPIC_ID, outputStream);
+        multicastMessagingService.send(TOPIC_ID, outputStream);
 
         messageListener.waitForMessageReceived(outputStream.toByteArray());
     }
@@ -40,20 +41,20 @@ public final class MessagingServiceImplTest
         encoderStream.writeInt(TOPIC_ID);
         encoderStream.writeByteArray(MESSAGE_PAYLOAD, 0, MESSAGE_PAYLOAD.length);
 
-        messagingService.registerReceiver(TOPIC_ID, testMessageReceiver);
-        messagingService.start();
+        multicastMessagingService.registerReceiver(TOPIC_ID, testMessageReceiver);
+        multicastMessagingService.start();
 
-        messagingService.send(TOPIC_ID, outputStream);
+        multicastMessagingService.send(TOPIC_ID, outputStream);
 
         testMessageReceiver.waitForMessageReceived(TOPIC_ID, outputStream.toByteArray());
 
-        messagingService.shutdown();
+        multicastMessagingService.shutdown();
     }
 
     @Before
     public void setUp() throws Exception
     {
-        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, new CodeBookImpl());
+        multicastMessagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, new CodeBookImpl());
         messageListener = new TestMessageListener(MULTICAST_ADDR, PORT_ID);
     }
 
