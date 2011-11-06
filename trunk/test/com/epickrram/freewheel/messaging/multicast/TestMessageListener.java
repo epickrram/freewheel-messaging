@@ -1,4 +1,4 @@
-package com.epickrram.freewheel.messaging;
+package com.epickrram.freewheel.messaging.multicast;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

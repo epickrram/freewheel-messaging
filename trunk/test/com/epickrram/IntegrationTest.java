@@ -1,7 +1,7 @@
 package com.epickrram;
 
 import com.epickrram.freewheel.messaging.MessagingService;
-import com.epickrram.freewheel.messaging.MessagingServiceImpl;
+import com.epickrram.freewheel.messaging.multicast.MulticastMessagingService;
 import com.epickrram.freewheel.messaging.Receiver;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
@@ -61,7 +61,7 @@ public final class IntegrationTest
     public void setUp() throws Exception
     {
         final CodeBookImpl codeBook = new CodeBookImpl();
-        messagingService = new MessagingServiceImpl(MULTICAST_ADDR, PORT_ID, codeBook);
+        messagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, codeBook);
         topicIdGenerator = new ClassNameTopicIdGenerator();
         publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
         subscriberFactory = new SubscriberFactory();
