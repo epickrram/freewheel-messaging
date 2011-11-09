@@ -3,6 +3,7 @@ package com.epickrram.freewheel.messaging.multicast;
 import com.epickrram.freewheel.messaging.MessagingException;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.Receiver;
+import com.epickrram.freewheel.messaging.ReceiverRegistry;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import org.msgpack.unpacker.MessagePackUnpacker;
@@ -30,7 +31,7 @@ public final class MulticastMessagingService implements MessagingService
     private final MulticastSocket multicastSocket;
     private final SocketAddress multicastAddress;
     private final String ipAddress;
-    private final Map<Integer, Receiver> topicIdToReceiverMap = new ConcurrentHashMap<Integer, Receiver>();
+    private final ReceiverRegistry receiverRegistry = new ReceiverRegistry();
     private final Thread listenerThread;
     private final CountDownLatch listenerThreadStartedLatch = new CountDownLatch(1);
     private final CodeBook codeBook;
@@ -80,7 +81,7 @@ public final class MulticastMessagingService implements MessagingService
 
     public void registerReceiver(final int topicId, final Receiver receiver)
     {
-        topicIdToReceiverMap.put(topicId, receiver);
+        receiverRegistry.registerReceiver(topicId, receiver);
     }
 
     public void start() throws MessagingException
@@ -173,7 +174,7 @@ public final class MulticastMessagingService implements MessagingService
                     final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(getCodeBook(), new MessagePackUnpacker(inputBuffer));
                     final int topicId = decoderStream.readInt();
 
-                    final Receiver receiver = topicIdToReceiverMap.get(topicId);
+                    final Receiver receiver = receiverRegistry.getReceiver(topicId);
                     if (receiver != null)
                     {
                         receiver.onMessage(topicId, decoderStream);

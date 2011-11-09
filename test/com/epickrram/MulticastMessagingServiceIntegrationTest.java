@@ -16,7 +16,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class IntegrationTest
+public final class MulticastMessagingServiceIntegrationTest
 {
     private static final int PORT_ID = 8765;
     private static final String MULTICAST_ADDR = "239.0.0.1";

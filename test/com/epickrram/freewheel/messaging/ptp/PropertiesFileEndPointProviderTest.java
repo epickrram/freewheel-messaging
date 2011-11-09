@@ -11,9 +11,9 @@ import static org.junit.Assert.assertThat;
 
 public final class PropertiesFileEndPointProviderTest
 {
-    private static final String VALID_RESOURCE_NAME = "valid-end-point.properties";
-    private static final String INVALID_RESOURCE_NAME = "invalid-end-point.properties";
-    private static final String INCOMPLETE_RESOURCE_NAME = "incomplete-end-point.properties";
+    private static final String VALID_RESOURCE_NAME = "endpoint/valid-end-point.properties";
+    private static final String INVALID_RESOURCE_NAME = "endpoint/invalid-end-point.properties";
+    private static final String INCOMPLETE_RESOURCE_NAME = "endpoint/incomplete-end-point.properties";
     private static final String SERVICE_A_HOST = "192.168.1.12";
     private static final int SERVICE_A_PORT = 1234;
     private static final String SERVICE_B_HOST = "192.168.1.24";
