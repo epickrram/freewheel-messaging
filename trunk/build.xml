@@ -3,6 +3,9 @@
 <project name="freewheel" basedir="." default="all">
 
     <property name="dist.dir" value="build/dist"/>
+    <property name="test.dir" value="build/test"/>
+    <property name="test-classes.dir" value="build/test/classes"/>
+    <property name="test-output.dir" value="build/test/output"/>
     <property name="release.dir" value="build/release"/>
     <property name="majorVersion" value="0"/>
     <property name="minorVersion" value="1"/>
@@ -20,6 +23,23 @@
         <path refid="dist.class.path"/>
     </path>
 
+    <path id="test-class.class.path">
+        <path refid="dist.class.path"/>
+        <path refid="build.class.path"/>
+        <fileset dir="${dist.dir}/classes">
+            <include name="**/*.class"/>
+        </fileset>
+    </path>
+
+    <path id="test.class.path">
+        <path refid="dist.class.path"/>
+        <path refid="build.class.path"/>
+        <path refid="test-class.class.path"/>
+        <fileset dir="${test-classes.dir}">
+            <include name="**/*.class"/>
+        </fileset>
+    </path>
+
     <target name="clean">
         <delete dir="${dist.dir}"/>
     </target>
@@ -29,6 +49,18 @@
     	<javac destdir="${dist.dir}/classes" srcdir="src" target="6" source="6"  debug="true" debuglevel="lines,vars,source">
     		<classpath refid="build.class.path"/>
     	</javac>
+    </target>
+
+    <target name="compile-test" depends="clean">
+        <mkdir dir="${test-classes.dir}"/>
+    	<javac destdir="${test-classes.dir}" srcdir="src" target="6" source="6"  debug="true" debuglevel="lines,vars,source">
+    		<classpath refid="test-class.class.path"/>
+    	</javac>
+    </target>
+
+    <target name="test" depends="compile, compile-test">
+        <mkdir dir="${test-output.dir}"/>
+
     </target>
 
     <target name="jar" depends="compile">
