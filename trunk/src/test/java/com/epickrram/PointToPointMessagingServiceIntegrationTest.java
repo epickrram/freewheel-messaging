@@ -8,11 +8,11 @@ import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public final class PointToPointMessagingServiceIntegrationTest
 {
@@ -47,11 +47,46 @@ public final class PointToPointMessagingServiceIntegrationTest
         Assert.assertTrue(isInAscendingOrder(testInterface.methodTwoInvocationArguments));
     }
 
-    @Ignore(value = "not yet implemented")
     @Test
     public void shouldSuccessfullyCreatePublisherIfSubscriberIsNotYetListening() throws Exception
     {
+        final TestInterfaceImpl testInterface = new TestInterfaceImpl();
+        Executors.newSingleThreadExecutor().submit(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(1500L);
+                }
+                catch (InterruptedException e)
+                {
+                    // ignore
+                }
+                messagingHelper.createSubscriber(TestInterface.class, testInterface);
+            }
+        });
 
+        final TestInterface proxy = messagingHelper.createPublisher(TestInterface.class);
+
+        final int expectedCallsOnMethodOne = 500;
+        final int expectedCallsOnMethodTwo = 700;
+
+        for(int i = 0; i < expectedCallsOnMethodOne; i++)
+        {
+            proxy.methodOne(i);
+        }
+
+        for(int i = 0; i < expectedCallsOnMethodTwo; i++)
+        {
+            proxy.methodTwo(17L, i, (byte) 127);
+        }
+
+        waitForExpectedMethodCalls(testInterface, expectedCallsOnMethodTwo);
+
+        Assert.assertEquals(printMissing(testInterface.methodOneInvocationArguments), expectedCallsOnMethodOne, testInterface.methodOneInvocationCount);
+        Assert.assertEquals(printMissing(testInterface.methodTwoInvocationArguments), expectedCallsOnMethodTwo, testInterface.methodTwoInvocationCount);
     }
 
     @Before
