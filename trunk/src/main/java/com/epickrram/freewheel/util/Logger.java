@@ -15,10 +15,13 @@ Copyright 2011 Mark Price
  */
 package com.epickrram.freewheel.util;
 
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 public final class Logger
 {
+    public static final LogFormatter LOG_FORMATTER = new LogFormatter();
     private final java.util.logging.Logger delegate;
 
     public Logger(final java.util.logging.Logger delegate)
@@ -48,7 +51,7 @@ public final class Logger
 
     public static Logger getLogger(final Class cls)
     {
-        final java.util.logging.Logger delegate = java.util.logging.Logger.getLogger(cls.getName());
+        final java.util.logging.Logger delegate = java.util.logging.Logger.getLogger(cls.getSimpleName());
         return new Logger(delegate);
     }
 }
