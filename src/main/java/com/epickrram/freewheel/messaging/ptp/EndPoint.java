@@ -2,12 +2,12 @@ package com.epickrram.freewheel.messaging.ptp;
 
 import java.net.InetAddress;
 
-final class EndPoint
+public final class EndPoint
 {
     private final InetAddress address;
     private final int port;
 
-    EndPoint(final InetAddress address, final int port)
+    public EndPoint(final InetAddress address, final int port)
     {
         this.address = address;
         this.port = port;

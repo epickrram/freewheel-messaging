@@ -16,12 +16,17 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class PublisherFactory
 {
     private final MessagingService messagingService;
     private final TopicIdGenerator topicIdGenerator;
     private final CodeBook codeBook;
+    // TODO replace with Memoizer
+    private static final Map<Class<?>, Constructor> CONSTRUCTOR_MAP =
+            new ConcurrentHashMap<Class<?>, Constructor>();
 
     public PublisherFactory(final MessagingService messagingService, final TopicIdGenerator topicIdGenerator, final CodeBook codeBook)
     {
@@ -35,6 +40,10 @@ public final class PublisherFactory
     {
         try
         {
+            if(CONSTRUCTOR_MAP.containsKey(descriptor))
+            {
+                return createPublisher(descriptor, CONSTRUCTOR_MAP.get(descriptor));
+            }
             final String generatedClassname = getGeneratedClassname(descriptor);
             final ClassPool classPool = new ClassPool(ClassPool.getDefault());
             classPool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
@@ -62,7 +71,9 @@ public final class PublisherFactory
             }
 
             final Constructor jdkConstructor = ctClass.toClass().getConstructor(new Class[]{MessagingService.class, int.class, CodeBook.class});
-            return (T) jdkConstructor.newInstance(messagingService, topicIdGenerator.getTopicId(descriptor), codeBook);
+            CONSTRUCTOR_MAP.put(descriptor, jdkConstructor);
+
+            return createPublisher(descriptor, jdkConstructor);
         }
         catch (CannotCompileException e)
         {
@@ -88,6 +99,12 @@ public final class PublisherFactory
         {
             throw new RemotingException("Unable to generate publisher", e);
         }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private <T> T createPublisher(final Class<T> descriptor, final Constructor jdkConstructor) throws InstantiationException, IllegalAccessException, InvocationTargetException
+    {
+        return (T) jdkConstructor.newInstance(messagingService, topicIdGenerator.getTopicId(descriptor), codeBook);
     }
 
     private MethodInfo createMethod(final Method method, final int methodIndex, final CtClass ctClass) throws CannotCompileException

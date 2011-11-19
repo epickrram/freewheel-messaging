@@ -20,6 +20,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.ReceiveBufferSizePredictor;
@@ -33,6 +34,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PointToPointMessagingService implements MessagingService
 {
@@ -152,41 +154,52 @@ public final class PointToPointMessagingService implements MessagingService
                     @Override
                     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception
                     {
-                        LOGGER.error("Received message on publisher service channel", null);
+
+                    }
+
+                    @Override
+                    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception
+                    {
+                        LOGGER.info("Error connecting to EndPoint: " + e.getCause().getMessage());
                     }
                 });
             }
         });
-        final InetSocketAddress remoteAddress = new InetSocketAddress("127.0.0.1", endPoint.getPort());
+        final InetSocketAddress remoteAddress = new InetSocketAddress(endPoint.getAddress(), endPoint.getPort());
 
         LOGGER.info("Publisher connecting to remote address: " + remoteAddress);
 
-        publisherChannelFuture = bootstrap.connect(remoteAddress);
-        publisherChannelFuture.addListener(new ChannelFutureListener()
-        {
-            @Override
-            public void operationComplete(final ChannelFuture future) throws Exception
-            {
-                LOGGER.info("Channel op complete. Success: " + future.isSuccess() +
-                        ", cancelled: " + future.isCancelled() + ", done: " + future.isDone());
-            }
-        });
+        final AtomicBoolean socketConnectedFlag = new AtomicBoolean(false);
 
-        try
+        while(!socketConnectedFlag.get())
         {
-            LOGGER.info("Waiting for publisher channel");
-            if(publisherChannelFuture.await(5000L))
+            publisherChannelFuture = bootstrap.connect(remoteAddress);
+
+            publisherChannelFuture.addListener(new ChannelFutureListener()
             {
-                LOGGER.info("Publisher channel complete");
-            }
-            else
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception
+                {
+                    LOGGER.info("Channel op complete. Success: " + future.isSuccess() +
+                            ", cancelled: " + future.isCancelled() + ", done: " + future.isDone());
+                    if(future.isSuccess())
+                    {
+                        socketConnectedFlag.set(true);
+                    }
+                }
+            });
+
+            try
             {
-                throw new MessagingException("Could not connect client channel");
+                LOGGER.info("Waiting for publisher channel");
+                publisherChannelFuture.await(5000L);
+                Thread.sleep(1000L);
             }
-        }
-        catch (InterruptedException e)
-        {
-            throw new MessagingException("Failed to wait for publisher channel", e);
+            catch (InterruptedException e)
+            {
+                throw new MessagingException("Failed to wait for publisher channel", e);
+            }
+
         }
     }
 

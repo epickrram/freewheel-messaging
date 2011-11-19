@@ -70,6 +70,9 @@ public final class MulticastMessagingService implements MessagingService
                 LOGGER.warning("Attempting to send message of " + dataLength + " bytes");
             }
             sendPacket.setSocketAddress(multicastAddress);
+
+            LOGGER.info("Sending message of size " + dataLength + " to address " + multicastAddress);
+
             multicastSocket.send(sendPacket);
         }
         catch (IOException e)
@@ -157,7 +160,7 @@ public final class MulticastMessagingService implements MessagingService
 
         public void run()
         {
-            LOGGER.info("MessageHandler Thread listening.");
+            LOGGER.info("MessageHandler Thread listening at " + socket.getRemoteSocketAddress());
             listenerThreadStartedLatch.countDown();
             while (!Thread.currentThread().isInterrupted())
             {
@@ -166,6 +169,7 @@ public final class MulticastMessagingService implements MessagingService
                 try
                 {
                     socket.receive(recvPacket);
+                    LOGGER.info("Received a packet of length " + recvPacket.getLength());
                     final ByteArrayInputStream inputBuffer = new ByteArrayInputStream(recvPacket.getData(),
                             recvPacket.getOffset(),
                             recvPacket.getLength());

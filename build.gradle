@@ -2,13 +2,14 @@ apply plugin: 'java'
 
 repositories {
  flatDir {
-   dirs 'lib/dist', 'lib/build'
+   dirs 'lib/dist', 'lib/build', 'lib/optional'
  }
 }
 
 dependencies {
  compile name: 'fastutil-5.1.5'
  compile name: 'javassist'
+ compile name: 'netty-3.2.6.Final'
  compile name: 'log4j-1.2.15'
  compile name: 'msgpack-0.0.1'
  compile name: 'slf4j-api-1.6.2'
