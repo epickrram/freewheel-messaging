@@ -8,6 +8,7 @@ import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -20,12 +21,12 @@ public final class PointToPointMessagingServiceIntegrationTest
     @Test
     public void shouldSendMessages() throws Exception
     {
-        final TestInterface proxy = messagingHelper.createPublisher(TestInterface.class);
         final TestInterfaceImpl testInterface = new TestInterfaceImpl();
         messagingHelper.createSubscriber(TestInterface.class, testInterface);
+        final TestInterface proxy = messagingHelper.createPublisher(TestInterface.class);
 
-        final int expectedCallsOnMethodOne = 5;
-        final int expectedCallsOnMethodTwo = 7;
+        final int expectedCallsOnMethodOne = 500;
+        final int expectedCallsOnMethodTwo = 700;
 
         for(int i = 0; i < expectedCallsOnMethodOne; i++)
         {
@@ -44,6 +45,13 @@ public final class PointToPointMessagingServiceIntegrationTest
 
         Assert.assertTrue(isInAscendingOrder(testInterface.methodOneInvocationArguments));
         Assert.assertTrue(isInAscendingOrder(testInterface.methodTwoInvocationArguments));
+    }
+
+    @Ignore(value = "not yet implemented")
+    @Test
+    public void shouldSuccessfullyCreatePublisherIfSubscriberIsNotYetListening() throws Exception
+    {
+
     }
 
     @Before

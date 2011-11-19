@@ -26,7 +26,7 @@ public final class PointToPointMessagingHelper implements MessagingHelper
     {
         // TODO should not allow multiple publishers - use a memoizer keyed by class
         final PointToPointMessagingService messagingService =
-                new PointToPointMessagingService(getEndPoint(descriptor), ServiceType.PUBLISH);
+                new PointToPointMessagingService(getEndPoint(descriptor), ServiceType.PUBLISH, codeBook);
         messagingService.start();
         return new PublisherFactory(messagingService, topicIdGenerator, codeBook).createPublisher(descriptor);
     }
@@ -35,7 +35,7 @@ public final class PointToPointMessagingHelper implements MessagingHelper
     public <T> void createSubscriber(final Class<T> descriptor, final T implementation) throws MessagingException
     {
         // TODO should not allow multiple publishers - use a memoizer keyed by class
-        final PointToPointMessagingService messagingService = new PointToPointMessagingService(getEndPoint(descriptor), ServiceType.SUBSCRIBE);
+        final PointToPointMessagingService messagingService = new PointToPointMessagingService(getEndPoint(descriptor), ServiceType.SUBSCRIBE, codeBook);
         final Receiver receiver = new SubscriberFactory().createReceiver(descriptor, implementation);
         messagingService.registerReceiver(topicIdGenerator.getTopicId(descriptor), receiver);
         messagingService.start();
