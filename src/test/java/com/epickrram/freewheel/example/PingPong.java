@@ -1,10 +1,14 @@
 package com.epickrram.freewheel.example;
 
+import com.epickrram.freewheel.messaging.MessagingContext;
+import com.epickrram.freewheel.messaging.MessagingContextImpl;
 import com.epickrram.freewheel.messaging.ptp.EndPoint;
 import com.epickrram.freewheel.messaging.ptp.EndPointProvider;
-import com.epickrram.freewheel.messaging.ptp.PointToPointMessagingHelper;
+import com.epickrram.freewheel.messaging.ptp.PointToPointMessagingService;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
+import com.epickrram.freewheel.remoting.PublisherFactory;
+import com.epickrram.freewheel.remoting.SubscriberFactory;
 import com.epickrram.freewheel.util.Logger;
 
 import java.net.Inet4Address;
@@ -26,7 +30,7 @@ public final class PingPong
 
     private final Mode mode;
     private final InetAddress remoteHost;
-    private final PointToPointMessagingHelper messagingHelper;
+    private final MessagingContext messagingContext;
 
     public static void main(String[] args) throws UnknownHostException
     {
@@ -46,7 +50,13 @@ public final class PingPong
     {
         this.remoteHost = remoteHost;
         this.mode = mode;
-        messagingHelper = new PointToPointMessagingHelper(new FixedEndPointProvider(), new CodeBookImpl(), new ClassNameTopicIdGenerator());
+        final CodeBookImpl codeBook = new CodeBookImpl();
+        final ClassNameTopicIdGenerator topicIdGenerator = new ClassNameTopicIdGenerator();
+        final PointToPointMessagingService messagingService =
+                new PointToPointMessagingService(new FixedEndPointProvider(), codeBook, topicIdGenerator);
+
+        messagingContext = new MessagingContextImpl(new PublisherFactory(messagingService, topicIdGenerator, codeBook),
+                new SubscriberFactory(), messagingService, topicIdGenerator);
     }
 
     private void start()
@@ -60,19 +70,20 @@ public final class PingPong
                 createPong();
                 break;
         }
+        messagingContext.start();
     }
 
     private void createPong()
     {
-        final RespondingPingReceiver respondingPingReceiver = new RespondingPingReceiver(messagingHelper);
-        messagingHelper.createSubscriber(Ping.class, respondingPingReceiver);
+        final RespondingPingReceiver respondingPingReceiver = new RespondingPingReceiver(messagingContext);
+        messagingContext.createSubscriber(Ping.class, respondingPingReceiver);
         respondingPingReceiver.init();
     }
 
     private void createPing()
     {
-        messagingHelper.createSubscriber(Pong.class, new LoggingPongReceiver());
-        final Ping ping = messagingHelper.createPublisher(Ping.class);
+        messagingContext.createSubscriber(Pong.class, new LoggingPongReceiver());
+        final Ping ping = messagingContext.createPublisher(Ping.class);
         Executors.newSingleThreadExecutor().submit(new Runnable()
         {
             int count = 0;
@@ -80,11 +91,19 @@ public final class PingPong
             @Override
             public void run()
             {
+                pause();
                 while(true)
                 {
-                    final String message = "Hello from " + getLocalHostname() + " [" + (++count) + "]";
-                    LOGGER.info("Sending " + message);
-                    ping.onPing(message);
+                    try
+                    {
+                        final String message = "Hello from " + getLocalHostname() + " [" + (++count) + "]";
+                        LOGGER.info("Sending " + message);
+                        ping.onPing(message);
+                    }
+                    catch(RuntimeException e)
+                    {
+                        System.err.println("Caught exception: " + e.getMessage());
+                    }
                     pause();
                 }
             }
@@ -146,11 +165,11 @@ public final class PingPong
     private class RespondingPingReceiver implements Ping
     {
         private Pong pong;
-        private final PointToPointMessagingHelper messagingHelper;
+        private final MessagingContext messagingContext;
 
-        public RespondingPingReceiver(final PointToPointMessagingHelper messagingHelper)
+        public RespondingPingReceiver(final MessagingContext messagingContext)
         {
-            this.messagingHelper = messagingHelper;
+            this.messagingContext = messagingContext;
         }
 
         @Override
@@ -162,7 +181,7 @@ public final class PingPong
 
         public void init()
         {
-            pong = messagingHelper.createPublisher(Pong.class);
+            pong = messagingContext.createPublisher(Pong.class);
         }
     }
 }

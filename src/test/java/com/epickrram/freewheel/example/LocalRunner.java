@@ -30,6 +30,7 @@ public final class LocalRunner
                 }
             }
         });
+        thread.setName(mode);
         thread.start();
         return thread;
     }
