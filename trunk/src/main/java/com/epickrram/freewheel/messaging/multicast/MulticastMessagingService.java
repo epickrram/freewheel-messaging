@@ -1,11 +1,11 @@
 package com.epickrram.freewheel.messaging.multicast;
 
+import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import com.epickrram.freewheel.messaging.MessagingException;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.Receiver;
 import com.epickrram.freewheel.messaging.ReceiverRegistry;
 import com.epickrram.freewheel.protocol.CodeBook;
-import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import org.msgpack.unpacker.MessagePackUnpacker;
 
 import java.io.ByteArrayInputStream;
@@ -17,8 +17,6 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,6 +56,16 @@ public final class MulticastMessagingService implements MessagingService
         }
     }
 
+    @Override
+    public <T> void registerPublisher(final Class<T> descriptor)
+    {
+    }
+
+    @Override
+    public <T> void registerSubscriber(final Class<T> descriptor)
+    {
+    }
+
     public void send(final int topicId, final ByteArrayOutputStream byteArrayOutputStream) throws MessagingException
     {
         try
@@ -74,6 +82,8 @@ public final class MulticastMessagingService implements MessagingService
             LOGGER.info("Sending message of size " + dataLength + " to address " + multicastAddress);
 
             multicastSocket.send(sendPacket);
+
+            LOGGER.info("Sent message");
         }
         catch (IOException e)
         {
@@ -160,7 +170,6 @@ public final class MulticastMessagingService implements MessagingService
 
         public void run()
         {
-            LOGGER.info("MessageHandler Thread listening at " + socket.getRemoteSocketAddress());
             listenerThreadStartedLatch.countDown();
             while (!Thread.currentThread().isInterrupted())
             {
@@ -168,6 +177,7 @@ public final class MulticastMessagingService implements MessagingService
                 final DatagramPacket recvPacket = new DatagramPacket(receiveBuffer, 0, BUFFER_SIZE);
                 try
                 {
+                    LOGGER.info("Waiting for packet...");
                     socket.receive(recvPacket);
                     LOGGER.info("Received a packet of length " + recvPacket.getLength());
                     final ByteArrayInputStream inputBuffer = new ByteArrayInputStream(recvPacket.getData(),

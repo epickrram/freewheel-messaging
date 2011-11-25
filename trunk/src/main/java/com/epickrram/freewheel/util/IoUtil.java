@@ -1,5 +1,7 @@
 package com.epickrram.freewheel.util;
 
+import org.jboss.netty.channel.Channel;
+
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -19,6 +21,14 @@ public final class IoUtil
             {
                 // ignore
             }
+        }
+    }
+
+    public static void close(final Channel channel)
+    {
+        if(channel != null)
+        {
+            channel.close();
         }
     }
 }
