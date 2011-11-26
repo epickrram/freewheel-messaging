@@ -11,18 +11,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
-public final class Memoizer<K, V> implements Provider<K, V>
+public final class Memoizer<K, V>
 {
     private final ConcurrentMap<K, Future<V>> valueCache = new ConcurrentHashMap<K, Future<V>>();
-    private final Provider<K, V> valueProvider;
 
-    public Memoizer(final Provider<K, V> valueProvider)
-    {
-        this.valueProvider = valueProvider;
-    }
-
-    @Override
-    public V provide(final K key)
+    public V getValue(final K key, final Provider<K, V> valueProvider)
     {
         while(true)
         {

@@ -23,10 +23,11 @@ import com.epickrram.freewheel.messaging.ReceiverRegistry;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import com.epickrram.freewheel.util.IoUtil;
+import com.epickrram.freewheel.util.Memoizer;
+import com.epickrram.freewheel.util.Provider;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferInputStream;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -46,8 +47,10 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.msgpack.unpacker.MessagePackUnpacker;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -72,6 +75,8 @@ public final class PointToPointMessagingService implements MessagingService
     private final TopicIdGenerator topicIdGenerator;
     private final Map<Integer, Channel> publisherChannelByTopicIdMap = new ConcurrentHashMap<Integer, Channel>();
     private final List<Channel> subscriberChannels = new CopyOnWriteArrayList<Channel>();
+    private final Memoizer<EndPoint, RunnableFuture<Channel>> subscriberChannelMemoizer =
+            new Memoizer<EndPoint, RunnableFuture<Channel>>();
 
     private final List<RunnableFuture<Channel>> subscriberChannelFutures = new CopyOnWriteArrayList<RunnableFuture<Channel>>();
     private final Map<Integer, RunnableFuture<Channel>> publisherChannelFutures = new ConcurrentHashMap<Integer, RunnableFuture<Channel>>();
@@ -105,7 +110,7 @@ public final class PointToPointMessagingService implements MessagingService
             throw new MessagingException("Cannot register a publisher after MessagingService has been started");
         }
         final EndPoint endPoint = endPointProvider.resolveEndPoint(descriptor);
-        createSubscriberChannel(endPoint, descriptor);
+        createSubscriberChannel(endPoint);
     }
 
     @Override
@@ -264,7 +269,7 @@ public final class PointToPointMessagingService implements MessagingService
         }));
     }
 
-    private <T> void createSubscriberChannel(final EndPoint endPoint, final Class<T> descriptor)
+    private void createSubscriberChannel(final EndPoint endPoint)
     {
         final ChannelFactory channelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
                 Executors.newCachedThreadPool());
@@ -285,12 +290,21 @@ public final class PointToPointMessagingService implements MessagingService
                         while(buffer.readableBytes() > 4)
                         {
                             final int messageSize = buffer.readInt();
-                            final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(codeBook,
-                                    new MessagePackUnpacker(new ChannelBufferInputStream(buffer, messageSize)));
+                            final byte[] messageBuffer = new byte[messageSize];
+                            buffer.readBytes(messageBuffer, 0, messageSize);
+
+                            final MessagePackUnpacker messagePackUnpacker = new MessagePackUnpacker(new ByteArrayInputStream(messageBuffer));
+                            final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(codeBook, messagePackUnpacker);
                             final int topicId = decoderStream.readInt();
 
-                            final Receiver receiver = receiverRegistry.getReceiver(topicId);
-                            receiver.onMessage(topicId, decoderStream);
+                            final Collection<Receiver> receiverList = receiverRegistry.getReceiverList(topicId);
+                            for (Receiver receiver : receiverList)
+                            {
+                                final MessagePackUnpacker innerMessagePackUnpacker = new MessagePackUnpacker(new ByteArrayInputStream(messageBuffer));
+                                final UnpackerDecoderStream innerDecoderStream = new UnpackerDecoderStream(codeBook, innerMessagePackUnpacker);
+                                innerDecoderStream.readInt();
+                                receiver.onMessage(topicId, innerDecoderStream);
+                            }
                         }
                     }
                 });
@@ -298,15 +312,25 @@ public final class PointToPointMessagingService implements MessagingService
         });
         final InetSocketAddress subscriberAddress = new InetSocketAddress(endPoint.getPort());
 
-        subscriberChannelFutures.add(new FutureTask<Channel>(new Callable<Channel>()
+        final RunnableFuture<Channel> subscriberChannelFuture =
+                subscriberChannelMemoizer.getValue(endPoint, new Provider<EndPoint, RunnableFuture<Channel>>()
         {
             @Override
-            public Channel call() throws Exception
+            public RunnableFuture<Channel> provide(final EndPoint key)
             {
-                return bootstrap.bind(subscriberAddress);
+                return new FutureTask<Channel>(new Callable<Channel>()
+                {
+                    @Override
+                    public Channel call() throws Exception
+                    {
+                        LOGGER.info("Creating Subscriber for address: " + subscriberAddress);
+                        return bootstrap.bind(subscriberAddress);
+                    }
+                });
             }
-        }));
-        LOGGER.info("Created Subscriber for address: " + subscriberAddress);
+        });
+
+        subscriberChannelFutures.add(subscriberChannelFuture);
     }
 
     private void setSubscriberOptions(final ServerBootstrap bootstrap)
