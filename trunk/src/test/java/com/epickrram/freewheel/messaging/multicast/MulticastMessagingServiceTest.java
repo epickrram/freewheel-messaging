@@ -17,20 +17,21 @@ package com.epickrram.freewheel.messaging.multicast;
 
 import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.messaging.TestMessageReceiver;
+import com.epickrram.freewheel.messaging.ptp.EndPoint;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.msgpack.packer.MessagePackPacker;
 
 import java.io.ByteArrayOutputStream;
+import java.net.InetAddress;
 
 public final class MulticastMessagingServiceTest
 {
     private static final int TOPIC_ID = 2384734;
     private static final byte[] MESSAGE_PAYLOAD = new byte[] {9, 8, 7, 6, 5, 4};
-    private static final int PORT_ID = 8765;
+    private static final int PORT = 8765;
     private static final String MULTICAST_ADDR = "239.0.0.1";
     private MulticastMessagingService multicastMessagingService;
     private TestMessageListener messageListener;
@@ -70,8 +71,8 @@ public final class MulticastMessagingServiceTest
     @Before
     public void setUp() throws Exception
     {
-        multicastMessagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, new CodeBookImpl());
-        messageListener = new TestMessageListener(MULTICAST_ADDR, PORT_ID);
+        multicastMessagingService = new MulticastMessagingService(new EndPoint(InetAddress.getByName(MULTICAST_ADDR), PORT), new CodeBookImpl());
+        messageListener = new TestMessageListener(MULTICAST_ADDR, PORT);
     }
 
     @After

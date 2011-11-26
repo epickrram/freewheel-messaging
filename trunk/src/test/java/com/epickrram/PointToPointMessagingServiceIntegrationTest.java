@@ -16,14 +16,9 @@
 
 package com.epickrram;
 
-import com.epickrram.freewheel.messaging.MessagingContextImpl;
-import com.epickrram.freewheel.messaging.ptp.PointToPointMessagingService;
+import com.epickrram.freewheel.messaging.MessagingContext;
+import com.epickrram.freewheel.messaging.MessagingContextFactory;
 import com.epickrram.freewheel.messaging.ptp.PropertiesFileEndPointProvider;
-import com.epickrram.freewheel.protocol.CodeBookImpl;
-import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
-import com.epickrram.freewheel.remoting.PublisherFactory;
-import com.epickrram.freewheel.remoting.SubscriberFactory;
-import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,7 +31,7 @@ import java.util.concurrent.Executors;
 
 public final class PointToPointMessagingServiceIntegrationTest
 {
-    private MessagingContextImpl messagingContext;
+    private MessagingContext messagingContext;
 
     @Test
     public void shouldAllowMultipleSubscribers() throws Exception
@@ -137,15 +132,10 @@ public final class PointToPointMessagingServiceIntegrationTest
     @Before
     public void setUp() throws Exception
     {
-        final CodeBookImpl codeBook = new CodeBookImpl();
-        final TopicIdGenerator topicIdGenerator = new ClassNameTopicIdGenerator();
         final PropertiesFileEndPointProvider endPointProvider =
                 new PropertiesFileEndPointProvider(getClass().getSimpleName() + "/end-point.properties");
 
-        final PointToPointMessagingService messagingService = new PointToPointMessagingService(endPointProvider, codeBook, topicIdGenerator);
-
-        messagingContext = new MessagingContextImpl(new PublisherFactory(messagingService, topicIdGenerator, codeBook),
-                new SubscriberFactory(), messagingService, topicIdGenerator);
+        messagingContext = new MessagingContextFactory().createPointToPointMessagingContext(endPointProvider);
     }
 
     @After

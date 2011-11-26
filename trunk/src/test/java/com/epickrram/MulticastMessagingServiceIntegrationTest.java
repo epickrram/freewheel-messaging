@@ -15,25 +15,23 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram;
 
-import com.epickrram.freewheel.messaging.MessagingContextImpl;
-import com.epickrram.freewheel.messaging.multicast.MulticastMessagingService;
-import com.epickrram.freewheel.protocol.CodeBookImpl;
-import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
-import com.epickrram.freewheel.remoting.PublisherFactory;
-import com.epickrram.freewheel.remoting.SubscriberFactory;
+import com.epickrram.freewheel.messaging.MessagingContext;
+import com.epickrram.freewheel.messaging.MessagingContextFactory;
+import com.epickrram.freewheel.messaging.ptp.EndPoint;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class MulticastMessagingServiceIntegrationTest
 {
-    private static final int PORT_ID = 18765;
+    private static final int PORT = 18765;
     private static final String MULTICAST_ADDR = "239.0.0.1";
-    private MessagingContextImpl messagingContext;
+    private MessagingContext messagingContext;
 
     @Test
     public void shouldSendMessages() throws Exception
@@ -69,11 +67,7 @@ public final class MulticastMessagingServiceIntegrationTest
     @Before
     public void setUp() throws Exception
     {
-        final CodeBookImpl codeBook = new CodeBookImpl();
-        final ClassNameTopicIdGenerator topicIdGenerator = new ClassNameTopicIdGenerator();
-        final MulticastMessagingService messagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, codeBook);
-        final PublisherFactory publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
-        messagingContext = new MessagingContextImpl(publisherFactory, new SubscriberFactory(), messagingService, topicIdGenerator);
+        messagingContext = new MessagingContextFactory().createMulticastMessagingContext(new EndPoint(InetAddress.getByName(MULTICAST_ADDR), PORT));
     }
 
     @After
