@@ -1,3 +1,18 @@
+//////////////////////////////////////////////////////////////////////////////////
+//   Copyright 2011   Mark Price     mark at epickrram.com                      //
+//                                                                              //
+//   Licensed under the Apache License, Version 2.0 (the "License");            //
+//   you may not use this file except in compliance with the License.           //
+//   You may obtain a copy of the License at                                    //
+//                                                                              //
+//       http://www.apache.org/licenses/LICENSE-2.0                             //
+//                                                                              //
+//   Unless required by applicable law or agreed to in writing, software        //
+//   distributed under the License is distributed on an "AS IS" BASIS,          //
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   //
+//   See the License for the specific language governing permissions and        //
+//   limitations under the License.                                             //
+//////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.messaging.ptp;
 
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
@@ -8,7 +23,6 @@ import com.epickrram.freewheel.messaging.ReceiverRegistry;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import com.epickrram.freewheel.util.IoUtil;
-import com.epickrram.freewheel.util.Logger;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -44,12 +58,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
 public final class PointToPointMessagingService implements MessagingService
 {
-    private static final Logger LOGGER = Logger.getLogger(PointToPointMessagingService.class);
+    private static final Logger LOGGER = Logger.getLogger(PointToPointMessagingService.class.getName());
     private static final int MAX_MESSAGE_SIZE = 64 * 1024;
-    public static final long CONNECTION_TIMEOUT_MILLIS = 10000L;
+    private static final long CONNECTION_TIMEOUT_MILLIS = 10000L;
 
     private final ReceiverRegistry receiverRegistry = new ReceiverRegistry();
     private final EndPointProvider endPointProvider;
@@ -192,6 +207,7 @@ public final class PointToPointMessagingService implements MessagingService
                     public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception
                     {
                         LOGGER.info("Error connecting to EndPoint: " + e.getCause().getMessage());
+                        e.getCause().printStackTrace();
                     }
                 });
             }

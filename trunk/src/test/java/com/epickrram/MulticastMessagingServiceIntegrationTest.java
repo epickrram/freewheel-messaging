@@ -1,13 +1,26 @@
+//////////////////////////////////////////////////////////////////////////////////
+//   Copyright 2011   Mark Price     mark at epickrram.com                      //
+//                                                                              //
+//   Licensed under the Apache License, Version 2.0 (the "License");            //
+//   you may not use this file except in compliance with the License.           //
+//   You may obtain a copy of the License at                                    //
+//                                                                              //
+//       http://www.apache.org/licenses/LICENSE-2.0                             //
+//                                                                              //
+//   Unless required by applicable law or agreed to in writing, software        //
+//   distributed under the License is distributed on an "AS IS" BASIS,          //
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   //
+//   See the License for the specific language governing permissions and        //
+//   limitations under the License.                                             //
+//////////////////////////////////////////////////////////////////////////////////
 package com.epickrram;
 
-import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.messaging.MessagingContextImpl;
 import com.epickrram.freewheel.messaging.multicast.MulticastMessagingService;
-import com.epickrram.freewheel.messaging.Receiver;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
 import com.epickrram.freewheel.remoting.PublisherFactory;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
-import com.epickrram.freewheel.remoting.TopicIdGenerator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,22 +31,18 @@ import java.util.List;
 
 public final class MulticastMessagingServiceIntegrationTest
 {
-    private static final int PORT_ID = 8765;
+    private static final int PORT_ID = 18765;
     private static final String MULTICAST_ADDR = "239.0.0.1";
-    private MessagingService messagingService;
-    private PublisherFactory publisherFactory;
-    private SubscriberFactory subscriberFactory;
-    private TopicIdGenerator topicIdGenerator;
+    private MessagingContextImpl messagingContext;
 
     @Test
     public void shouldSendMessages() throws Exception
     {
-        final TestInterface proxy = publisherFactory.createPublisher(TestInterface.class);
+        final TestInterface proxy = messagingContext.createPublisher(TestInterface.class);
         final TestInterfaceImpl testInterface = new TestInterfaceImpl();
-        final Receiver receiver = subscriberFactory.createReceiver(TestInterface.class, testInterface);
+        messagingContext.createSubscriber(TestInterface.class, testInterface);
 
-        messagingService.registerReceiver(topicIdGenerator.getTopicId(TestInterface.class), receiver);
-        messagingService.start();
+        messagingContext.start();
 
         final int expectedCallsOnMethodOne = 5;
         final int expectedCallsOnMethodTwo = 7;
@@ -61,16 +70,16 @@ public final class MulticastMessagingServiceIntegrationTest
     public void setUp() throws Exception
     {
         final CodeBookImpl codeBook = new CodeBookImpl();
-        messagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, codeBook);
-        topicIdGenerator = new ClassNameTopicIdGenerator();
-        publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
-        subscriberFactory = new SubscriberFactory();
+        final ClassNameTopicIdGenerator topicIdGenerator = new ClassNameTopicIdGenerator();
+        final MulticastMessagingService messagingService = new MulticastMessagingService(MULTICAST_ADDR, PORT_ID, codeBook);
+        final PublisherFactory publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
+        messagingContext = new MessagingContextImpl(publisherFactory, new SubscriberFactory(), messagingService, topicIdGenerator);
     }
 
     @After
     public void tearDown()
     {
-        messagingService.shutdown();
+        messagingContext.stop();
     }
 
     private void waitForExpectedMethodCalls(final TestInterfaceImpl testInterface, final int expectedCallsOnMethodTwo) throws InterruptedException
