@@ -15,19 +15,32 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.messaging;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class ReceiverRegistry
 {
-    private final Map<Integer, Receiver> receiverByTopicIdMap = new ConcurrentHashMap<Integer, Receiver>();
+    private final Map<Integer, Queue<Receiver>> receiverByTopicIdMap = new ConcurrentHashMap<Integer, Queue<Receiver>>();
 
     public void registerReceiver(final int topicId, final Receiver receiver)
     {
-        receiverByTopicIdMap.put(topicId, receiver);
+        Queue<Receiver> receiverQueue = receiverByTopicIdMap.get(topicId);
+        if(receiverQueue == null)
+        {
+            receiverQueue = new ConcurrentLinkedQueue<Receiver>();
+            final Queue<Receiver> existing = receiverByTopicIdMap.put(topicId, receiverQueue);
+            if(existing != null)
+            {
+                receiverQueue = existing;
+            }
+        }
+        receiverQueue.add(receiver);
     }
 
-    public Receiver getReceiver(final int topicId)
+    public Collection<Receiver> getReceiverList(final int topicId)
     {
         return receiverByTopicIdMap.get(topicId);
     }

@@ -13,6 +13,7 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
+
 package com.epickrram;
 
 import com.epickrram.freewheel.messaging.MessagingContextImpl;
@@ -36,6 +37,28 @@ import java.util.concurrent.Executors;
 public final class PointToPointMessagingServiceIntegrationTest
 {
     private MessagingContextImpl messagingContext;
+
+    @Test
+    public void shouldAllowMultipleSubscribers() throws Exception
+    {
+        final TestInterfaceImpl testInterfaceOne = new TestInterfaceImpl();
+        final TestInterfaceImpl testInterfaceTwo = new TestInterfaceImpl();
+        messagingContext.createSubscriber(TestInterface.class, testInterfaceOne);
+        messagingContext.createSubscriber(TestInterface.class, testInterfaceTwo);
+        final TestInterface proxy = messagingContext.createPublisher(TestInterface.class);
+
+        messagingContext.start();
+
+        final int expectedCallsOnMethodTwo = 50;
+
+        for(int i = 0; i < expectedCallsOnMethodTwo; i++)
+        {
+            proxy.methodTwo(0L, i, (byte) 0);
+        }
+
+        waitForExpectedMethodCalls(testInterfaceOne, expectedCallsOnMethodTwo);
+        waitForExpectedMethodCalls(testInterfaceTwo, expectedCallsOnMethodTwo);
+    }
 
     @Test
     public void shouldSendMessages() throws Exception

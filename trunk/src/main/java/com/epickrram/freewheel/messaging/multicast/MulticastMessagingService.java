@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -203,8 +204,8 @@ public final class MulticastMessagingService implements MessagingService
                     final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(getCodeBook(), new MessagePackUnpacker(inputBuffer));
                     final int topicId = decoderStream.readInt();
 
-                    final Receiver receiver = receiverRegistry.getReceiver(topicId);
-                    if (receiver != null)
+                    final Collection<Receiver> receiverList = receiverRegistry.getReceiverList(topicId);
+                    for (Receiver receiver : receiverList)
                     {
                         receiver.onMessage(topicId, decoderStream);
                     }
