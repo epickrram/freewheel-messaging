@@ -13,36 +13,27 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.util.Creator;
+package com.epickrram.freewheel.util;
 
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.epickrram.freewheel.util.ConcurrentMapIdiom.getOrCreateFromConcurrentMap;
-
-public final class ReceiverRegistry
+public final class ConcurrentMapIdiom
 {
-    private final ConcurrentMap<Integer, Queue<Receiver>> receiverByTopicIdMap = new ConcurrentHashMap<Integer, Queue<Receiver>>();
+    private ConcurrentMapIdiom() {}
 
-    public void registerReceiver(final int topicId, final Receiver receiver)
+    public static <K, V> V getOrCreateFromConcurrentMap(final ConcurrentMap<K, V> map, final Creator<V> creator, final K key)
     {
-        getOrCreateFromConcurrentMap(receiverByTopicIdMap, new Creator<Queue<Receiver>>()
+        if(map.containsKey(key))
         {
-            @Override
-            public Queue<Receiver> create()
-            {
-                return new ConcurrentLinkedQueue<Receiver>();
-            }
-        }, topicId).add(receiver);
-    }
-
-    public Collection<Receiver> getReceiverList(final int topicId)
-    {
-        return receiverByTopicIdMap.get(topicId);
+            return map.get(key);
+        }
+        V value = creator.create();
+        final V existing = map.putIfAbsent(key, value);
+        if(existing != null)
+        {
+            value = existing;
+        }
+        return value;
     }
 }

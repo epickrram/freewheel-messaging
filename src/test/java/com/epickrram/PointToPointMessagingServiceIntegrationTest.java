@@ -66,7 +66,6 @@ public final class PointToPointMessagingServiceIntegrationTest
 
         final int expectedCallsOnMethodOne = 500;
         final int expectedCallsOnMethodTwo = 700;
-
         for(int i = 0; i < expectedCallsOnMethodOne; i++)
         {
             proxy.methodOne(i);
