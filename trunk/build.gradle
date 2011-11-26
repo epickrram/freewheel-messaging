@@ -26,6 +26,6 @@ sourceCompatibility = 1.5
 version = '1.0'
 jar {
    manifest {
-       attributes 'Implementation-Title': 'Freewheel-Messaging', 'Implementation-Version': version
+       attributes 'Implementation-Title': 'Freewheel-Messaging', 'Implementation-Version': version, 'Author': 'Mark Price'
    }
 }
