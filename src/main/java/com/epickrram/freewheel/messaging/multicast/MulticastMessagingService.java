@@ -20,6 +20,7 @@ import com.epickrram.freewheel.messaging.MessagingException;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.Receiver;
 import com.epickrram.freewheel.messaging.ReceiverRegistry;
+import com.epickrram.freewheel.messaging.ptp.EndPoint;
 import com.epickrram.freewheel.protocol.CodeBook;
 import org.msgpack.unpacker.MessagePackUnpacker;
 
@@ -52,14 +53,14 @@ public final class MulticastMessagingService implements MessagingService
 
     private volatile boolean isShuttingDown = false;
 
-    public MulticastMessagingService(final String ipAddress, final int port, final CodeBook codeBook)
+    public MulticastMessagingService(final EndPoint endPoint, final CodeBook codeBook)
     {
-        this.ipAddress = ipAddress;
+        this.ipAddress = endPoint.getAddress().getHostAddress();
         this.codeBook = codeBook;
         try
         {
-            multicastAddress = new InetSocketAddress(InetAddress.getByName(ipAddress), port);
-            multicastSocket = createMulticastSocket(port);
+            multicastAddress = new InetSocketAddress(InetAddress.getByName(ipAddress), endPoint.getPort());
+            multicastSocket = createMulticastSocket(endPoint.getPort());
             listenerThread = new Thread(new MessageHandler(multicastSocket), "MessageHandler");
         }
         catch (SocketException e)
