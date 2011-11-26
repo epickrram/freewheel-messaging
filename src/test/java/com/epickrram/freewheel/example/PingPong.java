@@ -1,3 +1,18 @@
+//////////////////////////////////////////////////////////////////////////////////
+//   Copyright 2011   Mark Price     mark at epickrram.com                      //
+//                                                                              //
+//   Licensed under the Apache License, Version 2.0 (the "License");            //
+//   you may not use this file except in compliance with the License.           //
+//   You may obtain a copy of the License at                                    //
+//                                                                              //
+//       http://www.apache.org/licenses/LICENSE-2.0                             //
+//                                                                              //
+//   Unless required by applicable law or agreed to in writing, software        //
+//   distributed under the License is distributed on an "AS IS" BASIS,          //
+//   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   //
+//   See the License for the specific language governing permissions and        //
+//   limitations under the License.                                             //
+//////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.example;
 
 import com.epickrram.freewheel.messaging.MessagingContext;
@@ -9,12 +24,13 @@ import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
 import com.epickrram.freewheel.remoting.PublisherFactory;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
-import com.epickrram.freewheel.util.Logger;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 public final class PingPong
 {
@@ -24,7 +40,7 @@ public final class PingPong
         PONG
     }
 
-    private static final Logger LOGGER = Logger.getLogger(PingPong.class);
+    private static final Logger LOGGER = Logger.getLogger(PingPong.class.getName());
     private static final int PING_PORT = 16789;
     private static final int PONG_PORT = 16799;
 
@@ -82,7 +98,8 @@ public final class PingPong
 
     private void createPing()
     {
-        messagingContext.createSubscriber(Pong.class, new LoggingPongReceiver());
+        final LoggingPongReceiver loggingPongReceiver = new LoggingPongReceiver();
+        messagingContext.createSubscriber(Pong.class, loggingPongReceiver);
         final Ping ping = messagingContext.createPublisher(Ping.class);
         Executors.newSingleThreadExecutor().submit(new Runnable()
         {
@@ -96,9 +113,9 @@ public final class PingPong
                 {
                     try
                     {
-                        final String message = "Hello from " + getLocalHostname() + " [" + (++count) + "]";
-                        LOGGER.info("Sending " + message);
-                        ping.onPing(message);
+                        final int messageNumber = ++count;
+                        loggingPongReceiver.sending(messageNumber);
+                        ping.onPing(messageNumber);
                     }
                     catch(RuntimeException e)
                     {
@@ -122,26 +139,14 @@ public final class PingPong
         }
     }
 
-    private String getLocalHostname()
-    {
-        try
-        {
-            return Inet4Address.getLocalHost().getHostName();
-        }
-        catch (UnknownHostException e)
-        {
-            throw new RuntimeException("Cannot determine hostname", e);
-        }
-    }
-
     interface Ping
     {
-        void onPing(final String message);
+        void onPing(final int messageNumber);
     }
 
     interface Pong
     {
-        void onPong(final String message);
+        void onPong(final int messageNumber);
     }
 
     private class FixedEndPointProvider implements EndPointProvider
@@ -155,10 +160,18 @@ public final class PingPong
 
     private class LoggingPongReceiver implements Pong
     {
+        private final Map<Integer, Long> messageSendTimestampMap = new ConcurrentHashMap<Integer, Long>();
+
         @Override
-        public void onPong(final String message)
+        public void onPong(final int messageNumber)
         {
-            LOGGER.info("Received pong message: " + message);
+            final Long startTimestamp = messageSendTimestampMap.get(messageNumber);
+            LOGGER.info("Received message " + messageNumber + ", RTT " + (System.currentTimeMillis() - startTimestamp) + "ms");
+        }
+
+        public void sending(final int messageNumber)
+        {
+            messageSendTimestampMap.put(messageNumber, System.currentTimeMillis());
         }
     }
 
@@ -173,10 +186,9 @@ public final class PingPong
         }
 
         @Override
-        public void onPing(final String message)
+        public void onPing(final int messageNumber)
         {
-            LOGGER.info("Received ping message: " + message + ", responding");
-            pong.onPong("Hello back, I received: " + message);
+            pong.onPong(messageNumber);
         }
 
         public void init()
