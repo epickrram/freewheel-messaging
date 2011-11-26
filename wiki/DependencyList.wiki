@@ -6,7 +6,7 @@ Freewheel depends on the following libraries:
   * netty-3.2.6.Final
   * msgpack-0.0.1
 
-Additionally, javassist depends on these libraries:
+Additionally, msgpack depends on these libraries:
 
   * log4j-1.2.15
   * slf4j-api-1.6.2
