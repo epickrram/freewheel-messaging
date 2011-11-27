@@ -1,0 +1,40 @@
+#summary How to send messages that return a value
+
+= Introduction =
+
+Freewheel is designed to facilitate fully asynchronous messaging, however there are something scenarios in which it is necessary to send messages synchronously (for example, an authentication request). Freewheel comes with a mechanism for achieving this, which is outlined below.
+
+Given a remote service:
+{{{
+public interface Service 
+{
+    void login(final String username, final String token);
+}
+}}}
+create a response interface for notifying the method result to the client:
+{{{
+public interface ServiceResponse
+{
+    void onLoginResponse(final String username, final boolean authenticated);
+}
+}}}
+and a client interface to tie the two together using the `@SyncMethod` annotation:
+{{{
+public interface ServiceClient
+{
+    @SyncMethod(requestMethod="login", responseMethod="onLoginResponse");
+    boolean doLogin(final String username, final String token);
+}
+}}}
+then use `SynchronousProxyGenerator` to create an implementation that will handle synchronous calls:
+{{{
+final ServiceClient serviceClient = 
+    SynchronousProxyGenerator.generateProxy(service, ServiceResponse.class, ServiceClient.class);
+}}}
+Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Cast the returned object to `ServiceResponse` and register with the `MessagingContext` as a `Subscriber`.
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
