@@ -35,3 +35,7 @@ Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Ca
 {{{
 messagingContext.createSubscriber(ServiceResponse.class, (ServiceResponse) serviceClient);
 }}}
+Now just call the `ServiceClient` to receive a synchronous response:
+{{{
+final boolean authenticated = serviceClient.doLogin("foo", "bar");
+}}}
