@@ -31,4 +31,7 @@ then use `SynchronousProxyGenerator` to create an implementation that will handl
 final ServiceClient serviceClient = 
     SynchronousProxyGenerator.generateProxy(service, ServiceResponse.class, ServiceClient.class);
 }}}
-Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Cast the returned object to `ServiceResponse` and register with the `MessagingContext` as a `Subscriber`.
+Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Cast the returned object to `ServiceResponse` and register with the `MessagingContext` as a `Subscriber`:
+{{{
+messagingContext.createSubscriber(ServiceResponse.class, (ServiceResponse) serviceClient);
+}}}
