@@ -32,9 +32,3 @@ final ServiceClient serviceClient =
     SynchronousProxyGenerator.generateProxy(service, ServiceResponse.class, ServiceClient.class);
 }}}
 Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Cast the returned object to `ServiceResponse` and register with the `MessagingContext` as a `Subscriber`.
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
