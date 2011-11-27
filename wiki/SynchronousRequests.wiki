@@ -1,6 +1,6 @@
 #summary How to send messages that return a value
 
-= Introduction =
+= Synchronous Requests =
 
 Freewheel is designed to facilitate fully asynchronous messaging, however there are something scenarios in which it is necessary to send messages synchronously (for example, an authentication request). Freewheel comes with a mechanism for achieving this, which is outlined below.
 
