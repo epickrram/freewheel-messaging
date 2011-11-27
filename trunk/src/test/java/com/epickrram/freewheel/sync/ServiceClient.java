@@ -10,6 +10,8 @@ public interface ServiceClient
     @SyncMethod(requestMethod = "requestMethodTwo", responseMethod = "onMethodTwoResponse")
     String getMethodTwo(final String identifier);
 
-    @SyncMethod(requestMethod = "requestAccountState", responseMethod = "onAccountState", timeoutMilliseconds = 1)
+    @SyncMethod(requestMethod = "requestAccountState",
+            responseMethod = "onAccountState",
+            timeoutMilliseconds = 1)
     BigDecimal timeoutAfterOneMillisecond(final long accountId);
 }

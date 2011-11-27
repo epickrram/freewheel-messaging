@@ -19,6 +19,7 @@ import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.io.EncoderStream;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,7 +51,12 @@ public final class CodeBookImpl implements CodeBook
     @Override
     public <T> int getTranslatorCode(final Class<T> cls)
     {
-        return codeBookIdByClassMap.get(cls);
+        final Integer code = codeBookIdByClassMap.get(cls);
+        if(code == null)
+        {
+            throw new TranslatorException("Unable to find Translator for class " + cls.getName());
+        }
+        return code;
     }
 
     private <T> void registerTranslator(final int codeBookId, final Class<T> cls, final Translator<T> translator)
@@ -105,6 +111,22 @@ public final class CodeBookImpl implements CodeBook
         registerTranslator(6, Boolean.class, new BooleanTranslator());
         registerTranslator(6, boolean.class, new BooleanTranslator());
         registerTranslator(7, String.class, new StringTranslator());
+        registerTranslator(8, BigDecimal.class, new BigDecimalTranslator());
+    }
+
+    private static final class BigDecimalTranslator extends AbstractTranslator<BigDecimal>
+    {
+        @Override
+        public BigDecimal doDecode(final DecoderStream decoderStream) throws IOException
+        {
+            return new BigDecimal(decoderStream.readString());
+        }
+
+        @Override
+        public void doEncode(final BigDecimal encodable, final EncoderStream encoderStream) throws IOException
+        {
+            encoderStream.writeString(encodable.toPlainString());
+        }
     }
 
     private static final class StringTranslator extends AbstractTranslator<String>
