@@ -26,16 +26,15 @@ public interface ServiceClient
     boolean doLogin(final String username, final String token);
 }
 }}}
-then use `SynchronousProxyGenerator` to create an implementation that will handle synchronous calls:
+then use `SynchronousProxyHelper` to create an implementation that will handle synchronous calls:
 {{{
-final ServiceClient serviceClient = 
-    SynchronousProxyGenerator.generateProxy(service, ServiceResponse.class, ServiceClient.class);
-}}}
-Your `service` object will be a freewheel `Publisher` to a remote `EndPoint`. Cast the returned object to `ServiceResponse` and register with the `MessagingContext` as a `Subscriber`:
-{{{
-messagingContext.createSubscriber(ServiceResponse.class, (ServiceResponse) serviceClient);
-}}}
-Now just call the `ServiceClient` to receive a synchronous response:
-{{{
+final SynchronousProxyHelper proxyHelper = new SynchronousProxyHelper();
+final ServiceResponse serviceResponse = messagingContext.createPublisher(ServiceResponse.class);
+messagingContext.createSubscriber(Service.class, new ServiceImpl(serviceResponse));
+final ServiceClient serviceClient =
+    proxyHelper.createSynchronousProxy(Service.class, ServiceResponse.class, ServiceClient.class, messagingContext);
+
+messagingContext.start();
+
 final boolean authenticated = serviceClient.doLogin("foo", "bar");
 }}}
