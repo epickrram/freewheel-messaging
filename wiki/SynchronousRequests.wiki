@@ -29,7 +29,9 @@ public interface ServiceClient
 then use `SynchronousProxyHelper` to create an implementation that will handle synchronous calls:
 {{{
 final SynchronousProxyHelper proxyHelper = new SynchronousProxyHelper();
+
 final ServiceResponse serviceResponse = messagingContext.createPublisher(ServiceResponse.class);
+
 messagingContext.createSubscriber(Service.class, new ServiceImpl(serviceResponse));
 final ServiceClient serviceClient =
     proxyHelper.createSynchronousProxy(Service.class, ServiceResponse.class, ServiceClient.class, messagingContext);
