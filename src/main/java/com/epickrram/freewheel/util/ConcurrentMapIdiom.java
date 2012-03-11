@@ -22,7 +22,8 @@ public final class ConcurrentMapIdiom
 {
     private ConcurrentMapIdiom() {}
 
-    public static <K, V> V getOrCreateFromConcurrentMap(final ConcurrentMap<K, V> map, final Creator<V> creator, final K key)
+    public static <K, V> V getOrCreateFromConcurrentMap(final ConcurrentMap<K, V> map,
+                                                        final Creator<V> creator, final K key)
     {
         if(map.containsKey(key))
         {

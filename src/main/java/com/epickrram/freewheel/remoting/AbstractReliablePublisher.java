@@ -13,25 +13,41 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.io;
+package com.epickrram.freewheel.remoting;
+
+import com.epickrram.freewheel.io.EncoderStream;
+import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
+import com.epickrram.freewheel.protocol.CodeBook;
+import com.epickrram.freewheel.util.RingBufferWrapper;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
 
-public interface EncoderStream
+public abstract class AbstractReliablePublisher
 {
-    public void writeBoolean(final boolean v) throws IOException;
-    public void writeByte(final byte v) throws IOException;
-    public void writeInt(final int v) throws IOException;
-    public void writeLong(final long v) throws IOException;
-    public void writeFloat(final float v) throws IOException;
-    public void writeDouble(final double v) throws IOException;
-    public void writeByteArray(final byte[] b) throws IOException;
-    public void writeByteArray(final byte[] b, int off, int len) throws IOException;
-    public void writeString(final String s) throws IOException;
-    public <T> void writeObject(final T o) throws IOException;
-    public <T> void writeCollection(final Collection<T> collection) throws IOException;
-    public <K, V> void writeMap(final Map<K, V> collection) throws IOException;
-    public void reset() throws IOException;
+    private final RingBufferWrapper<OutgoingMessageEvent> ringBuffer;
+    private final int topicId;
+    private final CodeBook codeBook;
+
+    public AbstractReliablePublisher(final RingBufferWrapper<OutgoingMessageEvent> ringBuffer,
+                                     final int topicId, final CodeBook codeBook)
+    {
+        this.ringBuffer = ringBuffer;
+        this.topicId = topicId;
+        this.codeBook = codeBook;
+    }
+
+    protected RingBufferWrapper<OutgoingMessageEvent> getRingBuffer()
+    {
+        return ringBuffer;
+    }
+
+    protected int getTopicId()
+    {
+        return topicId;
+    }
+
+    protected CodeBook getCodeBook()
+    {
+        return codeBook;
+    }
 }

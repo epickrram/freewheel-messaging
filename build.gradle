@@ -9,6 +9,7 @@ repositories {
 dependencies {
  compile name: 'fastutil-5.1.5'
  compile name: 'javassist'
+ compile name: 'disruptor-2.8'
  compile name: 'netty-3.2.6.Final'
  compile name: 'log4j-1.2.15'
  compile name: 'msgpack-0.0.1'
@@ -23,7 +24,7 @@ dependencies {
 }
 
 sourceCompatibility = 1.5
-version = '1.0'
+version = '0.1'
 jar {
    manifest {
        attributes 'Implementation-Title': 'Freewheel-Messaging', 'Implementation-Version': version, 'Author': 'Mark Price'

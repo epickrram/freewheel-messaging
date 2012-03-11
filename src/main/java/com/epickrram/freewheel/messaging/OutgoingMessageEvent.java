@@ -13,25 +13,33 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.io;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
+package com.epickrram.freewheel.messaging;
 
-public interface EncoderStream
+import com.epickrram.freewheel.io.EncoderStream;
+
+public final class OutgoingMessageEvent
 {
-    public void writeBoolean(final boolean v) throws IOException;
-    public void writeByte(final byte v) throws IOException;
-    public void writeInt(final int v) throws IOException;
-    public void writeLong(final long v) throws IOException;
-    public void writeFloat(final float v) throws IOException;
-    public void writeDouble(final double v) throws IOException;
-    public void writeByteArray(final byte[] b) throws IOException;
-    public void writeByteArray(final byte[] b, int off, int len) throws IOException;
-    public void writeString(final String s) throws IOException;
-    public <T> void writeObject(final T o) throws IOException;
-    public <T> void writeCollection(final Collection<T> collection) throws IOException;
-    public <K, V> void writeMap(final Map<K, V> collection) throws IOException;
-    public void reset() throws IOException;
+    private final EncoderStream encoderStream;
+    private int topicId;
+
+    public OutgoingMessageEvent(final EncoderStream encoderStream)
+    {
+        this.encoderStream = encoderStream;
+    }
+
+    public int getTopicId()
+    {
+        return topicId;
+    }
+
+    public void setTopicId(final int topicId)
+    {
+        this.topicId = topicId;
+    }
+
+    public EncoderStream getEncoderStream()
+    {
+        return encoderStream;
+    }
 }
