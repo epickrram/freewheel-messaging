@@ -14,10 +14,11 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.io;
 
-public interface PublisherFactory
+import java.io.ByteArrayOutputStream;
+
+public interface EncoderStreamFactory
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    EncoderStream create(final ByteArrayOutputStream output);
 }

@@ -14,10 +14,27 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.util;
 
-public interface PublisherFactory
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public final class DaemonThreadFactory implements ThreadFactory
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    private final AtomicInteger counter = new AtomicInteger();
+    private final String namePrefix;
+
+    public DaemonThreadFactory(final String namePrefix)
+    {
+        this.namePrefix = namePrefix;
+    }
+
+    @Override
+    public Thread newThread(final Runnable r)
+    {
+        final Thread thread = new Thread(r);
+        thread.setDaemon(true);
+        thread.setName(namePrefix + "-" + counter.incrementAndGet());
+        return thread;
+    }
 }

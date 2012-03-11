@@ -33,5 +33,4 @@ public interface EncoderStream
     public <T> void writeObject(final T o) throws IOException;
     public <T> void writeCollection(final Collection<T> collection) throws IOException;
     public <K, V> void writeMap(final Map<K, V> collection) throws IOException;
-    public void reset() throws IOException;
 }

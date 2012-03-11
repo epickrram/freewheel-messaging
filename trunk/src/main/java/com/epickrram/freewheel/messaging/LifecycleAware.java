@@ -14,10 +14,10 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.messaging;
 
-public interface PublisherFactory
+public interface LifecycleAware
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    void systemStarting();
+    void systemStopping();
 }

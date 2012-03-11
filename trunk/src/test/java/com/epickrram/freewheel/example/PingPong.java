@@ -22,7 +22,7 @@ import com.epickrram.freewheel.messaging.ptp.EndPointProvider;
 import com.epickrram.freewheel.messaging.ptp.PointToPointMessagingService;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
-import com.epickrram.freewheel.remoting.PublisherFactory;
+import com.epickrram.freewheel.remoting.DirectPublisherFactory;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
 
 import java.net.InetAddress;
@@ -71,7 +71,7 @@ public final class PingPong
         final PointToPointMessagingService messagingService =
                 new PointToPointMessagingService(new FixedEndPointProvider(), codeBook, topicIdGenerator);
 
-        messagingContext = new MessagingContextImpl(new PublisherFactory(messagingService, topicIdGenerator, codeBook),
+        messagingContext = new MessagingContextImpl(new DirectPublisherFactory(messagingService, topicIdGenerator, codeBook),
                 new SubscriberFactory(), messagingService, topicIdGenerator);
     }
 

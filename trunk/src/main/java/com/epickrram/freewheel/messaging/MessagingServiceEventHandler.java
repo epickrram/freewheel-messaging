@@ -14,10 +14,23 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.messaging;
 
-public interface PublisherFactory
+import com.lmax.disruptor.EventHandler;
+
+public final class MessagingServiceEventHandler implements EventHandler<OutgoingMessageEvent>
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    private final MessagingService messagingService;
+
+    public MessagingServiceEventHandler(final MessagingService messagingService)
+    {
+        this.messagingService = messagingService;
+    }
+
+    @Override
+    public void onEvent(final OutgoingMessageEvent event, final long sequence,
+                        final boolean endOfBatch) throws Exception
+    {
+        messagingService.send(event.getTopicId(), event.getOutput());
+    }
 }

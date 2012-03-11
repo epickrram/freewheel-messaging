@@ -138,9 +138,4 @@ public final class PackerEncoderStream implements EncoderStream
         }
     }
 
-    @Override
-    public void reset() throws IOException
-    {
-        // TODO :(
-    }
 }

@@ -18,6 +18,7 @@ package com.epickrram;
 
 import com.epickrram.freewheel.messaging.MessagingContext;
 import com.epickrram.freewheel.messaging.MessagingContextFactory;
+import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.messaging.ptp.PropertiesFileEndPointProvider;
 import org.junit.After;
 import org.junit.Assert;
@@ -59,8 +60,8 @@ public final class PointToPointMessagingServiceIntegrationTest
     public void shouldSendMessages() throws Exception
     {
         final TestInterfaceImpl testInterface = new TestInterfaceImpl();
-        messagingContext.createSubscriber(TestInterface.class, testInterface);
-        final TestInterface proxy = messagingContext.createPublisher(TestInterface.class);
+        messagingContext.createSubscriber(TestInterface2.class, testInterface);
+        final TestInterface2 proxy = messagingContext.createPublisher(TestInterface2.class);
 
         messagingContext.start();
 
@@ -183,7 +184,7 @@ public final class PointToPointMessagingServiceIntegrationTest
         return msg.toString();
     }
 
-    private static final class TestInterfaceImpl implements TestInterface
+    private static final class TestInterfaceImpl implements TestInterface, TestInterface2
     {
         private final List<Integer> methodOneInvocationArguments = new ArrayList<Integer>();
         private final List<Integer> methodTwoInvocationArguments = new ArrayList<Integer>();
@@ -203,7 +204,15 @@ public final class PointToPointMessagingServiceIntegrationTest
         }
     }
 
+    @Remote
     public interface TestInterface
+    {
+        void methodOne(int value);
+        void methodTwo(long first, int second, byte third);
+    }
+
+    @Remote
+    public interface TestInterface2
     {
         void methodOne(int value);
         void methodTwo(long first, int second, byte third);
