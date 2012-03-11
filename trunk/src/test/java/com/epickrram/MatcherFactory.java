@@ -42,8 +42,8 @@ public final class MatcherFactory
 
             public void describeTo(final Description description)
             {
-                description.appendText("Expected buffer " + Arrays.toString(expected.toByteArray()));
-                description.appendText(", got buffer " + Arrays.toString(actual.toByteArray()));
+                description.appendText("Expected buffer \n" + Arrays.toString(expected.toByteArray()));
+                description.appendText("\ngot buffer \n" + Arrays.toString(actual.toByteArray()));
             }
         };
     }

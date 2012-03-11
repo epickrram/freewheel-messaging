@@ -15,8 +15,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
 import com.epickrram.freewheel.protocol.CodeBook;
+import com.epickrram.freewheel.util.RingBufferWrapper;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -31,18 +32,25 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.epickrram.freewheel.remoting.GeneratedClassRegistry.CONSTRUCTOR_MAP;
 
-public final class PublisherFactory
+public final class ReliablePublisherFactory
 {
-    private final MessagingService messagingService;
+    private final RingBufferFactory ringBufferFactory;
     private final TopicIdGenerator topicIdGenerator;
     private final CodeBook codeBook;
+    // TODO replace with Memoizer
+    private static final Map<Class<?>, RingBufferWrapper<OutgoingMessageEvent>> RING_BUFFER_MAP =
+            new ConcurrentHashMap<Class<?>, RingBufferWrapper<OutgoingMessageEvent>>();
 
-    public PublisherFactory(final MessagingService messagingService, final TopicIdGenerator topicIdGenerator, final CodeBook codeBook)
+    public ReliablePublisherFactory(final RingBufferFactory ringBufferFactory,
+                                    final TopicIdGenerator topicIdGenerator,
+                                    final CodeBook codeBook)
     {
-        this.messagingService = messagingService;
+        this.ringBufferFactory = ringBufferFactory;
         this.topicIdGenerator = topicIdGenerator;
         this.codeBook = codeBook;
     }
@@ -65,9 +73,10 @@ public final class PublisherFactory
             classPool.importPackage("com.epickrram.freewheel.stream");
             classPool.importPackage("com.epickrram.freewheel.io");
             classPool.importPackage("com.epickrram.freewheel.remoting");
+            classPool.importPackage("com.epickrram.freewheel.util");
             classPool.importPackage("org.msgpack.packer");
             classPool.importPackage("java.io");
-            final CtClass superClass = classPool.get("com.epickrram.freewheel.remoting.AbstractPublisher");
+            final CtClass superClass = classPool.get("com.epickrram.freewheel.remoting.AbstractReliablePublisher");
             final CtClass ctClass = classPool.makeClass(generatedClassname, superClass);
             final ClassFile classFile = ctClass.getClassFile();
 
@@ -82,8 +91,9 @@ public final class PublisherFactory
                 classFile.addMethod(createMethod(method, methodIndex, ctClass));
             }
 
-            final Constructor jdkConstructor = ctClass.toClass().getConstructor(new Class[]{MessagingService.class, int.class, CodeBook.class});
+            final Constructor jdkConstructor = ctClass.toClass().getConstructor(new Class[]{RingBufferWrapper.class, int.class, CodeBook.class});
             CONSTRUCTOR_MAP.put(descriptor, jdkConstructor);
+            RING_BUFFER_MAP.put(descriptor, ringBufferFactory.createRingBuffer(RingBufferFactory.DEFAULT_RING_BUFFER_SIZE));
 
             return createPublisher(descriptor, jdkConstructor);
         }
@@ -116,7 +126,7 @@ public final class PublisherFactory
     @SuppressWarnings({"unchecked"})
     private <T> T createPublisher(final Class<T> descriptor, final Constructor jdkConstructor) throws InstantiationException, IllegalAccessException, InvocationTargetException
     {
-        return (T) jdkConstructor.newInstance(messagingService, topicIdGenerator.getTopicId(descriptor), codeBook);
+        return (T) jdkConstructor.newInstance(RING_BUFFER_MAP.get(descriptor), topicIdGenerator.getTopicId(descriptor), codeBook);
     }
 
     private MethodInfo createMethod(final Method method, final int methodIndex, final CtClass ctClass) throws CannotCompileException
@@ -127,10 +137,15 @@ public final class PublisherFactory
         final Class<?>[] parameterTypes = method.getParameterTypes();
         appendParameterTypes(methodSource, parameterTypes);
 
-        methodSource.append(") {").
+        methodSource.append(") {\n").
+
+                append("final RingBufferWrapper ringBuffer = getRingBuffer();\n").
+                append("final long sequence = ringBuffer.next();\n").
                 append("\ntry {\n").
-                append("final ByteArrayOutputStream buffer = getOutputStream();\n").
-                append("final EncoderStream encoderStream = new PackerEncoderStream(getCodeBook(), new MessagePackPacker(buffer));\n").
+                append("final OutgoingMessageEvent messageEvent = (OutgoingMessageEvent) ringBuffer.get(sequence);\n").
+                append("messageEvent.setTopicId(getTopicId());\n").
+                append("final EncoderStream encoderStream = messageEvent.getEncoderStream();\n").
+                append("encoderStream.reset();\n").
                 append("encoderStream.writeInt(getTopicId());\n").
                 append("encoderStream.writeByte((byte) ").
                 append(methodIndex).
@@ -138,11 +153,13 @@ public final class PublisherFactory
 
         appendBufferCalls(methodSource, parameterTypes);
 
-        methodSource.append("getMessagingService().send(getTopicId(), buffer);");
-
         methodSource.append("} catch(IOException e) {\n").
                 append("throw new RuntimeException(\"Failed to write \", e);\n").
-                append("}\n}\n");
+                append("}\n").
+                append("finally {\nringBuffer.publish(sequence);}\n").
+                append("}\n");
+
+        System.out.println("Method:\n\n" + methodSource.toString());
 
         return CtNewMethod.make(methodSource.toString(), ctClass).getMethodInfo();
     }
