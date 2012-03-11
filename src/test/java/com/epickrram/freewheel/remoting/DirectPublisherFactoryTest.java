@@ -32,7 +32,7 @@ import java.io.ByteArrayOutputStream;
 import static com.epickrram.MatcherFactory.aByteOutputBufferMatching;
 
 @RunWith(JMock.class)
-public final class PublisherFactoryTest
+public final class DirectPublisherFactoryTest
 {
     private static final int TOPIC_IC = 7;
     private static final byte FIRST_METHOD_INDEX = 0;
@@ -133,7 +133,7 @@ public final class PublisherFactoryTest
         messagingService = mockery.mock(MessagingService.class);
         topicIdGenerator = mockery.mock(TopicIdGenerator.class);
 
-        publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
+        publisherFactory = new DirectPublisherFactory(messagingService, topicIdGenerator, codeBook);
 
         mockery.checking(new Expectations()
         {

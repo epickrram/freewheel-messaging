@@ -16,49 +16,45 @@
 
 package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.EncoderStream;
-import com.epickrram.freewheel.io.EncoderStreamFactory;
 import com.epickrram.freewheel.io.PackerEncoderStreamFactory;
-import com.lmax.disruptor.EventFactory;
+import com.epickrram.freewheel.protocol.CodeBookImpl;
+import org.jmock.Expectations;
+import org.jmock.Mockery;
+import org.jmock.integration.junit4.JMock;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
-
-public final class OutgoingMessageEvent
+@RunWith(JMock.class)
+public final class MessagingServiceEventHandlerTest
 {
-    private final EncoderStream encoderStream;
-    private final ByteArrayOutputStream output;
+    private static final int TOPIC_ID = 928374293;
+    
+    private Mockery mockery = new Mockery();
+    private MessagingService messagingService;
+    private MessagingServiceEventHandler eventHandler;
+    private OutgoingMessageEvent event;
 
-    private int topicId;
-
-    public OutgoingMessageEvent(final EncoderStreamFactory encoderStreamFactory)
+    @Test
+    public void shouldPublishOutgoingEventToMessagingService() throws Exception
     {
-        this.output = new ByteArrayOutputStream(256);
-        this.encoderStream = encoderStreamFactory.create(output);
+        event.setTopicId(TOPIC_ID);
+
+        mockery.checking(new Expectations()
+        {
+            {
+                one(messagingService).send(TOPIC_ID, event.getOutput());
+            }
+        });
+
+        eventHandler.onEvent(event, 0L, true);
     }
 
-    public int getTopicId()
+    @Before
+    public void setUp() throws Exception
     {
-        return topicId;
+        messagingService = mockery.mock(MessagingService.class);
+        eventHandler = new MessagingServiceEventHandler(messagingService);
+        event = new OutgoingMessageEvent(new PackerEncoderStreamFactory(new CodeBookImpl()));
     }
-
-    public void setTopicId(final int topicId)
-    {
-        this.topicId = topicId;
-    }
-
-    public EncoderStream getEncoderStream()
-    {
-        return encoderStream;
-    }
-
-    public ByteArrayOutputStream getOutput()
-    {
-        return output;
-    }
-
-    public void reset()
-    {
-        output.reset();
-    }
-
 }

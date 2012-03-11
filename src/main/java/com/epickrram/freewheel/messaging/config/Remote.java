@@ -14,10 +14,19 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.messaging.config;
 
-public interface PublisherFactory
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface Remote
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    public static final int DEFAULT_MESSAGE_STORE_SIZE = 1024;
+
+    boolean reliable() default false;
+    int messageStoreSize() default DEFAULT_MESSAGE_STORE_SIZE;
 }

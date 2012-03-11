@@ -17,6 +17,7 @@ package com.epickrram;
 
 import com.epickrram.freewheel.messaging.MessagingContext;
 import com.epickrram.freewheel.messaging.MessagingContextFactory;
+import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.messaging.ptp.EndPoint;
 import org.junit.After;
 import org.junit.Assert;
@@ -136,6 +137,7 @@ public final class MulticastMessagingServiceIntegrationTest
         }
     }
 
+    @Remote(messageStoreSize = 8)
     public interface TestInterface
     {
         void methodOne(int value);

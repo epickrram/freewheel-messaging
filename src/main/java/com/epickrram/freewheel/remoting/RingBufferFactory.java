@@ -21,7 +21,5 @@ import com.epickrram.freewheel.util.RingBufferWrapper;
 
 public interface RingBufferFactory
 {
-    int DEFAULT_RING_BUFFER_SIZE = 1024;
-
     RingBufferWrapper<OutgoingMessageEvent> createRingBuffer(final int size);
 }

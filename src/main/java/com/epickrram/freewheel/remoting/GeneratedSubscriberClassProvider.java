@@ -34,8 +34,6 @@ import java.util.logging.Logger;
 
 final class GeneratedSubscriberClassProvider<T> implements Provider<String, Class>
 {
-    private static final Logger LOGGER = Logger.getLogger(GeneratedSubscriberClassProvider.class.getSimpleName());
-
     private final String subscriberClassname;
     private final ClassPool classPool;
     private final String descriptorClassname;
@@ -83,18 +81,14 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
         ctClass.addInterface(classPool.get("com.epickrram.freewheel.messaging.Receiver"));
         final String methodSrc = "public void invoke(" + descriptorClassname + " implementation, " +
                 "DecoderStream decoderStream);";
-        LOGGER.info("\n" + methodSrc);
         final CtMethod invocationMethod = CtMethod.make(methodSrc, invokerInterfaceClass);
         invokerInterfaceClass.addMethod(invocationMethod);
         invokerInterfaceClass.toClass();
 
         ctClass.setModifiers(Modifier.PUBLIC | Modifier.FINAL);
         final String invokerArray = "private final " + invokerInterfaceName + "[] invokers;";
-        LOGGER.info("\n" + invokerArray);
         ctClass.addField(CtField.make(invokerArray, ctClass));
-        final String implementationField = "private final " + descriptorClassname + " implementation;";
-        LOGGER.info("\n" + implementationField);
-        ctClass.addField(CtField.make(implementationField, ctClass));
+        final String implementationField = "private final " + descriptorClassname + " implementation;";        ctClass.addField(CtField.make(implementationField, ctClass));
         return ctClass;
     }
 
@@ -115,8 +109,6 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
                     append(methodInvokers[methodIndex].getName().replace('$', '.')).append("();\n");
         }
         constructorBody.append("}");
-
-        LOGGER.info("\n" + constructorBody.toString());
 
         final CtConstructor ctConstructor = new CtConstructor(new CtClass[]{classPool.getCtClass(descriptor.getName())}, ctClass);
         ctConstructor.setBody(constructorBody.toString());
@@ -170,9 +162,6 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
             methodSource.append((parameterId++));
         }
         methodSource.append(");}");
-
-        LOGGER.info("\n" + methodSource.toString());
-
         ctClass.addMethod(CtMethod.make(methodSource.toString(), ctClass));
         ctClass.addConstructor(CtNewConstructor.defaultConstructor(ctClass));
         ctClass.toClass();
@@ -185,8 +174,6 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
                 " int methodIndex = decoderStream.readByte();" +
                 " invokers[methodIndex].invoke(implementation, decoderStream);" +
                 "}";
-
-        LOGGER.info("\n" + invocation);
 
         ctClass.addMethod(CtMethod.make(invocation, ctClass));
     }

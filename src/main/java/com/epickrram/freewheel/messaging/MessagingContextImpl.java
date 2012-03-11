@@ -19,12 +19,16 @@ import com.epickrram.freewheel.remoting.PublisherFactory;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
 import com.epickrram.freewheel.remoting.TopicIdGenerator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class MessagingContextImpl implements MessagingContext
 {
     private final PublisherFactory publisherFactory;
     private final SubscriberFactory subscriberFactory;
     private final MessagingService messagingService;
     private final TopicIdGenerator topicIdGenerator;
+    private final List<LifecycleAware> lifecycleAwareList = new ArrayList<LifecycleAware>();
 
     public MessagingContextImpl(final PublisherFactory publisherFactory,
                                 final SubscriberFactory subscriberFactory,
@@ -57,6 +61,10 @@ public final class MessagingContextImpl implements MessagingContext
     @Override
     public void start()
     {
+        for (LifecycleAware lifecycleAware : lifecycleAwareList)
+        {
+            lifecycleAware.systemStarting();
+        }
         messagingService.start();
     }
 
@@ -64,5 +72,10 @@ public final class MessagingContextImpl implements MessagingContext
     public void stop()
     {
         messagingService.shutdown();
+    }
+
+    public void registerLifecyleAware(final LifecycleAware lifecycleAware)
+    {
+        lifecycleAwareList.add(lifecycleAware);
     }
 }

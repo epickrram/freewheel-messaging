@@ -14,10 +14,25 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.io;
 
-public interface PublisherFactory
+import com.epickrram.freewheel.protocol.CodeBook;
+import org.msgpack.packer.MessagePackPacker;
+
+import java.io.ByteArrayOutputStream;
+
+public final class PackerEncoderStreamFactory implements EncoderStreamFactory
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    private final CodeBook codeBook;
+
+    public PackerEncoderStreamFactory(final CodeBook codeBook)
+    {
+        this.codeBook = codeBook;
+    }
+
+    @Override
+    public EncoderStream create(final ByteArrayOutputStream output)
+    {
+        return new PackerEncoderStream(codeBook, new MessagePackPacker(output));
+    }
 }

@@ -22,9 +22,16 @@ import com.epickrram.freewheel.messaging.ptp.EndPointProvider;
 import com.epickrram.freewheel.messaging.ptp.PointToPointMessagingService;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.protocol.CodeBookRegistry;
+import com.epickrram.freewheel.remoting.BufferedPublisherFactory;
 import com.epickrram.freewheel.remoting.ClassNameTopicIdGenerator;
-import com.epickrram.freewheel.remoting.PublisherFactory;
+import com.epickrram.freewheel.remoting.RingBufferFactoryImpl;
 import com.epickrram.freewheel.remoting.SubscriberFactory;
+import com.epickrram.freewheel.util.DaemonThreadFactory;
+import com.lmax.disruptor.EventProcessor;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class MessagingContextFactory
 {
@@ -50,8 +57,44 @@ public final class MessagingContextFactory
 
     private MessagingContext createMessagingContext(final MessagingService messagingService)
     {
-        final PublisherFactory publisherFactory = new PublisherFactory(messagingService, topicIdGenerator, codeBook);
+        final OutgoingMessageEventFactory eventFactory = new OutgoingMessageEventFactory(codeBook);
+        final MessagingServiceEventHandler eventHandler = new MessagingServiceEventHandler(messagingService);
+        final RingBufferFactoryImpl ringBufferFactory = new RingBufferFactoryImpl(eventFactory, eventHandler);
+        final BufferedPublisherFactory publisherFactory = new BufferedPublisherFactory(ringBufferFactory, topicIdGenerator, codeBook);
         final SubscriberFactory subscriberFactory = new SubscriberFactory();
-        return new MessagingContextImpl(publisherFactory, subscriberFactory, messagingService, topicIdGenerator);
+        final MessagingContextImpl messagingContext = new MessagingContextImpl(publisherFactory, subscriberFactory, messagingService, topicIdGenerator);
+        final List<EventProcessor> eventProcessors = ringBufferFactory.getEventProcessors();
+        messagingContext.registerLifecyleAware(new EventProcessorLifecycleAware(eventProcessors));
+        return messagingContext;
+    }
+
+    private static final class EventProcessorLifecycleAware implements LifecycleAware
+    {
+        private final List<EventProcessor> eventProcessors;
+        private volatile ExecutorService executorService;
+
+        public EventProcessorLifecycleAware(final List<EventProcessor> eventProcessors)
+        {
+            this.eventProcessors = eventProcessors;
+        }
+
+        @Override
+        public void systemStarting()
+        {
+            // TODO central control for Thread lifecycle
+            final DaemonThreadFactory threadFactory = new DaemonThreadFactory("publisher");
+            this.executorService = Executors.newFixedThreadPool(eventProcessors.size(), threadFactory);
+            for (EventProcessor eventProcessor : eventProcessors)
+            {
+                executorService.submit(eventProcessor);
+            }
+        }
+
+        @Override
+        public void systemStopping()
+        {
+            // TODO should halt() ringbuffers
+            executorService.shutdown();
+        }
     }
 }

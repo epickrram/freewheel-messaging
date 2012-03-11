@@ -14,10 +14,24 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram.freewheel.remoting;
+package com.epickrram.freewheel.messaging;
 
-public interface PublisherFactory
+import com.epickrram.freewheel.io.PackerEncoderStreamFactory;
+import com.epickrram.freewheel.protocol.CodeBook;
+import com.lmax.disruptor.EventFactory;
+
+public final class OutgoingMessageEventFactory implements EventFactory<OutgoingMessageEvent>
 {
-    @SuppressWarnings({"unchecked"})
-    <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+    private final CodeBook codeBook;
+
+    public OutgoingMessageEventFactory(final CodeBook codeBook)
+    {
+        this.codeBook = codeBook;
+    }
+
+    @Override
+    public OutgoingMessageEvent newInstance()
+    {
+        return new OutgoingMessageEvent(new PackerEncoderStreamFactory(codeBook));
+    }
 }

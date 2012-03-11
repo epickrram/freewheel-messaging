@@ -18,7 +18,9 @@ package com.epickrram.freewheel.remoting;
 
 import com.epickrram.freewheel.io.EncoderStream;
 import com.epickrram.freewheel.io.PackerEncoderStream;
+import com.epickrram.freewheel.io.PackerEncoderStreamFactory;
 import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
+import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import com.epickrram.freewheel.util.RingBufferWrapper;
@@ -37,16 +39,18 @@ import java.io.ByteArrayOutputStream;
 import static com.epickrram.MatcherFactory.aByteOutputBufferMatching;
 
 @RunWith(JMock.class)
-public final class ReliablePublisherFactoryTest
+public final class BufferedPublisherFactoryTest
 {
     private static final int TOPIC_ID = 987324234;
+    private static final int MESSAGE_STORE_SIZE = 2048;
 
     private Mockery mockery = new Mockery();
     private RingBufferFactory ringBufferFactory;
     private TopicIdGenerator topicIdGenerator;
-    private ReliablePublisherFactory reliablePublisherFactory;
+    private BufferedPublisherFactory bufferedPublisherFactory;
     private RingBufferWrapper<OutgoingMessageEvent> ringBufferWrapper;
     private CodeBook codeBook;
+    private PackerEncoderStreamFactory packerEncoderStreamFactory;
 
     @SuppressWarnings({"unchecked"})
     @Before
@@ -65,7 +69,14 @@ public final class ReliablePublisherFactoryTest
         });
         codeBook = new CodeBookImpl();
 
-        reliablePublisherFactory = new ReliablePublisherFactory(ringBufferFactory, topicIdGenerator, codeBook);
+        bufferedPublisherFactory = new BufferedPublisherFactory(ringBufferFactory, topicIdGenerator, codeBook);
+        packerEncoderStreamFactory = new PackerEncoderStreamFactory(codeBook);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldBlowUpIfNoRemoteAnnotationIsPresent() throws Exception
+    {
+        bufferedPublisherFactory.createPublisher(UnannotatedInterface.class);
     }
 
     @Test
@@ -74,22 +85,20 @@ public final class ReliablePublisherFactoryTest
         mockery.checking(new Expectations()
         {
             {
-                oneOf(ringBufferFactory).createRingBuffer(RingBufferFactory.DEFAULT_RING_BUFFER_SIZE);
+                oneOf(ringBufferFactory).createRingBuffer(MESSAGE_STORE_SIZE);
                 will(returnValue(ringBufferWrapper));
             }
         });
 
-        reliablePublisherFactory.createPublisher(SingleArgMethodInterface.class);
+        bufferedPublisherFactory.createPublisher(SingleArgMethodInterface.class);
     }
 
     @Test
     public void shouldPublishMessagesToRingBuffer() throws Exception
     {
         final Sequence seq = mockery.sequence("seq");
-        final ByteArrayOutputStream actualMessageOne = new ByteArrayOutputStream();
-        final ByteArrayOutputStream actualMessageTwo = new ByteArrayOutputStream();
-        final OutgoingMessageEvent firstEvent = new OutgoingMessageEvent(createEmptyEncoderStream(actualMessageOne));
-        final OutgoingMessageEvent secondEvent = new OutgoingMessageEvent(createEmptyEncoderStream(actualMessageTwo));
+        final OutgoingMessageEvent firstEvent = new OutgoingMessageEvent(packerEncoderStreamFactory);
+        final OutgoingMessageEvent secondEvent = new OutgoingMessageEvent(packerEncoderStreamFactory);
 
         final ByteArrayOutputStream expectedMessageOne = new ByteArrayOutputStream();
         final EncoderStream encoderOne = encoderFor(expectedMessageOne);
@@ -127,19 +136,19 @@ public final class ReliablePublisherFactoryTest
                 oneOf(ringBufferWrapper).publish(1L);
                 inSequence(seq);
 
-                allowing(ringBufferFactory).createRingBuffer(RingBufferFactory.DEFAULT_RING_BUFFER_SIZE);
+                allowing(ringBufferFactory).createRingBuffer(MESSAGE_STORE_SIZE);
                 will(returnValue(ringBufferWrapper));
             }
         });
 
         final MultipleArgMultipleMethodInterface publisher =
-                reliablePublisherFactory.createPublisher(MultipleArgMultipleMethodInterface.class);
+                bufferedPublisherFactory.createPublisher(MultipleArgMultipleMethodInterface.class);
 
         publisher.invoke(42, (byte) 11);
         publisher.invoke(Long.MAX_VALUE, 11, (byte) 3);
 
-        assertMessageContents(expectedMessageOne, actualMessageOne);
-        assertMessageContents(expectedMessageTwo, actualMessageTwo);
+        assertMessageContents(expectedMessageOne, (ByteArrayOutputStream) firstEvent.getOutput());
+        assertMessageContents(expectedMessageTwo, (ByteArrayOutputStream) secondEvent.getOutput());
     }
 
     private void assertMessageContents(final ByteArrayOutputStream expected,
@@ -148,25 +157,26 @@ public final class ReliablePublisherFactoryTest
         Assert.assertThat(actual, aByteOutputBufferMatching(expected));
     }
 
-
-    private EncoderStream createEmptyEncoderStream(final ByteArrayOutputStream output)
-    {
-        return encoderFor(output);
-    }
-
     private EncoderStream encoderFor(final ByteArrayOutputStream expectedMessage)
     {
         return new PackerEncoderStream(codeBook, new MessagePackPacker(expectedMessage));
     }
 
-    private interface MultipleArgMultipleMethodInterface
+    @Remote(reliable = true, messageStoreSize = MESSAGE_STORE_SIZE)
+    private static interface MultipleArgMultipleMethodInterface
     {
         void invoke(int value, byte b);
         void invoke(long value, int i, byte b);
     }
 
-    private interface SingleArgMethodInterface
+    @Remote(reliable = true, messageStoreSize = MESSAGE_STORE_SIZE)
+    private static interface SingleArgMethodInterface
     {
         void invoke(int value);
+    }
+
+    private static interface UnannotatedInterface
+    {
+        void bar();
     }
 }
