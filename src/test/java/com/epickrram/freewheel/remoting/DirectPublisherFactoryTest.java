@@ -19,6 +19,7 @@ import com.epickrram.freewheel.io.PackerEncoderStream;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import com.epickrram.freewheel.messaging.Bits;
 import com.epickrram.freewheel.messaging.MessagingService;
+import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
 import org.hamcrest.CoreMatchers;
@@ -221,27 +222,32 @@ public final class DirectPublisherFactoryTest
         return new PackerEncoderStream(codeBook, new MessagePackPacker(expectedMessage));
     }
 
+    @Remote
     private interface MultipleArgMultipleMethodInterface
     {
         void invoke(int value, byte b);
         void invoke(long value, int i, byte b);
     }
 
+    @Remote
     private interface SingleArgMethodInterface
     {
         void invoke(int value);
     }
 
+    @Remote
     private interface SingleNoArgsMethodInterface
     {
         void invoke();
     }
 
+    @Remote
     private interface SyncMethodInterface
     {
         String invoke(int value);
     }
 
+    @Remote
     private interface SyncMethodPrimitiveReturnValueInterface
     {
         int invoke(long value);

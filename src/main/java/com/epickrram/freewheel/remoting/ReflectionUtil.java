@@ -25,4 +25,30 @@ public final class ReflectionUtil
         return (method.getReturnType() != Void.class && method.getReturnType() != void.class) ||
                 method.getExceptionTypes().length != 0;
     }
+
+    public static <T> void ensureNoPrimitiveReturnTypes(final Class<T> descriptor)
+    {
+        final Method[] methods = descriptor.getMethods();
+        for (Method method : methods)
+        {
+            if(method.getReturnType().isPrimitive() && method.getReturnType() != void.class && method.getReturnType() != Void.class)
+            {
+                throw new IllegalArgumentException(String.format("Primitive return types are not currently supported. Use a wrapper type for method %s, returning %s.",
+                        method.getName(), method.getReturnType().getName()));
+            }
+        }
+    }
+
+    public static <T> boolean hasSyncMethods(final Class<T> descriptor)
+    {
+        final Method[] methods = descriptor.getMethods();
+        for (Method method : methods)
+        {
+            if (isSyncMethod(method))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

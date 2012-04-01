@@ -15,12 +15,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.remoting;
 
-import com.epickrram.freewheel.io.EncoderStream;
 import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.util.RingBufferWrapper;
-
-import java.io.IOException;
 
 public abstract class AbstractReliablePublisher
 {
