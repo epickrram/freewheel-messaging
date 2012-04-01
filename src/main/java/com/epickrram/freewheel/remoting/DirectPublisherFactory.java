@@ -15,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.remoting;
 
+import com.epickrram.freewheel.messaging.LifecycleAware;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.protocol.CodeBook;
 import javassist.CannotCompileException;
@@ -31,6 +32,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import static com.epickrram.freewheel.remoting.GeneratedClassRegistry.CONSTRUCTOR_MAP;
 
@@ -48,12 +51,19 @@ public final class DirectPublisherFactory implements PublisherFactory
     }
 
     @Override
+    public Collection<LifecycleAware> getLifecycleAwareCollection()
+    {
+        return Collections.emptyList();
+    }
+
+    @Override
     @SuppressWarnings({"unchecked"})
     public <T> T createPublisher(final Class<T> descriptor) throws RemotingException
     {
+        validatePublisherInterface(descriptor);
         try
         {
-            if(CONSTRUCTOR_MAP.containsKey(descriptor))
+            if (CONSTRUCTOR_MAP.containsKey(descriptor))
             {
                 return createPublisher(descriptor, CONSTRUCTOR_MAP.get(descriptor));
             }
@@ -114,6 +124,45 @@ public final class DirectPublisherFactory implements PublisherFactory
         }
     }
 
+    private <T> void validatePublisherInterface(final Class<T> descriptor)
+    {
+        final boolean hasSyncMethods = hasSyncMethods(descriptor);
+        if (hasSyncMethods && !messagingService.supportsSendAndWait())
+        {
+            throw new IllegalArgumentException("Publisher interface requires a MessagingService that supports sendAndWait");
+        }
+        if(hasSyncMethods)
+        {
+            ensureNoPrimitiveReturnTypes(descriptor);
+        }
+    }
+
+    private <T> void ensureNoPrimitiveReturnTypes(final Class<T> descriptor)
+    {
+        final Method[] methods = descriptor.getMethods();
+        for (Method method : methods)
+        {
+            if(method.getReturnType().isPrimitive() && method.getReturnType() != void.class && method.getReturnType() != Void.class)
+            {
+                throw new IllegalArgumentException(String.format("Primitive return types are not currently supported. Use a wrapper type for method %s, returning %s.",
+                        method.getName(), method.getReturnType().getName()));
+            }
+        }
+    }
+
+    private <T> boolean hasSyncMethods(final Class<T> descriptor)
+    {
+        final Method[] methods = descriptor.getMethods();
+        for (Method method : methods)
+        {
+            if (ReflectionUtil.isSyncMethod(method))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @SuppressWarnings({"unchecked"})
     private <T> T createPublisher(final Class<T> descriptor, final Constructor jdkConstructor) throws InstantiationException, IllegalAccessException, InvocationTargetException
     {
@@ -123,7 +172,10 @@ public final class DirectPublisherFactory implements PublisherFactory
     private MethodInfo createMethod(final Method method, final int methodIndex, final CtClass ctClass) throws CannotCompileException
     {
         final StringBuilder methodSource = new StringBuilder();
-        methodSource.append("public void ").append(method.getName()).append("(");
+        final boolean isSyncMethod = ReflectionUtil.isSyncMethod(method);
+
+        final Class<?> returnType = method.getReturnType();
+        methodSource.append("public ").append(isSyncMethod ? returnType.getName() : "void").append(" ").append(method.getName()).append("(");
 
         final Class<?>[] parameterTypes = method.getParameterTypes();
         appendParameterTypes(methodSource, parameterTypes);
@@ -139,9 +191,39 @@ public final class DirectPublisherFactory implements PublisherFactory
 
         appendBufferCalls(methodSource, parameterTypes);
 
-        methodSource.append("getMessagingService().send(getTopicId(), buffer);");
+        if (isSyncMethod)
+        {
+            methodSource.append("final DecoderStream decoderStream = getMessagingService().sendAndWait(getTopicId(), buffer);\n");
+            methodSource.append("return ");
 
-        methodSource.append("} catch(IOException e) {\n").
+            if (int.class == returnType)
+            {
+                methodSource.append("decoderStream.readInt();");
+            }
+            else if (long.class == returnType)
+            {
+                methodSource.append("decoderStream.readLong();");
+            }
+            else if (byte.class == returnType)
+            {
+                methodSource.append("decoderStream.readByte();");
+            }
+            else if (String.class == returnType)
+            {
+                methodSource.append("decoderStream.readString();");
+            }
+            else
+            {
+                methodSource.append(" (").append(returnType.getName()).append(") ");
+                methodSource.append("decoderStream.readObject();");
+            }
+        }
+        else
+        {
+            methodSource.append("getMessagingService().send(getTopicId(), buffer);\n");
+        }
+
+        methodSource.append("\n} catch(Throwable e) {\n").
                 append("throw new RuntimeException(\"Failed to write \", e);\n").
                 append("}\n}\n");
 
@@ -151,19 +233,20 @@ public final class DirectPublisherFactory implements PublisherFactory
     private void appendBufferCalls(final StringBuilder methodSource, final Class<?>[] parameterTypes)
     {
         char id = 'a';
-        for(int i = 0, n = parameterTypes.length; i < n; i++)
+        for (int i = 0, n = parameterTypes.length; i < n; i++)
         {
             methodSource.append("encoderStream.");
             appendBufferMethodCall(parameterTypes[i], methodSource, id++);
+            methodSource.append("\n");
         }
     }
 
     private void appendParameterTypes(final StringBuilder methodSource, final Class<?>[] parameterTypes)
     {
         char id = 'a';
-        for(int i = 0, n = parameterTypes.length; i < n; i++)
+        for (int i = 0, n = parameterTypes.length; i < n; i++)
         {
-            if(i != 0)
+            if (i != 0)
             {
                 methodSource.append(", ");
             }
@@ -173,19 +256,19 @@ public final class DirectPublisherFactory implements PublisherFactory
 
     private static void appendBufferMethodCall(final Class<?> parameterType, final StringBuilder methodSource, final char parameterName)
     {
-        if(int.class == parameterType)
+        if (int.class == parameterType)
         {
             methodSource.append("writeInt(").append(parameterName).append(");");
         }
-        else if(long.class == parameterType)
+        else if (long.class == parameterType)
         {
             methodSource.append("writeLong(").append(parameterName).append(");");
         }
-        else if(byte.class == parameterType)
+        else if (byte.class == parameterType)
         {
             methodSource.append("writeByte(").append(parameterName).append(");");
         }
-        else if(String.class == parameterType)
+        else if (String.class == parameterType)
         {
             methodSource.append("writeString(").append(parameterName).append(");");
         }

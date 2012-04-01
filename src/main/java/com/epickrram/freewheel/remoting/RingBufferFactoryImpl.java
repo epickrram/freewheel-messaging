@@ -31,8 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class RingBufferFactoryImpl implements RingBufferFactory
 {
-    private final List<EventProcessor> eventProcessors =
-            new CopyOnWriteArrayList<EventProcessor>();
+    private final List<EventProcessor> eventProcessors = new CopyOnWriteArrayList<EventProcessor>();
 
     private final EventFactory<OutgoingMessageEvent> eventFactory;
     private final EventHandler<OutgoingMessageEvent> eventHandler;
@@ -58,6 +57,7 @@ public final class RingBufferFactoryImpl implements RingBufferFactory
         return new DisruptorRingBufferWrapper<OutgoingMessageEvent>(ringBuffer);
     }
 
+    @Override
     public List<EventProcessor> getEventProcessors()
     {
         return eventProcessors;

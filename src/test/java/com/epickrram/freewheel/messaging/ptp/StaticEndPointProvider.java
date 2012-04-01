@@ -13,12 +13,38 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.DecoderStream;
+package com.epickrram.freewheel.messaging.ptp;
 
-public interface Receiver
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+public final class StaticEndPointProvider implements EndPointProvider
 {
-    void onMessage(final int topicId, final DecoderStream decoderStream);
-    Object onSyncMessage(final int topicId, final DecoderStream decoderStream);
+    private final String hostname;
+    private final int port;
+
+    public StaticEndPointProvider(final String hostname, final int port)
+    {
+        this.hostname = hostname;
+        this.port = port;
+    }
+
+    public static EndPointProvider localPort(final int port)
+    {
+        return new StaticEndPointProvider("localhost", port);
+    }
+
+    @Override
+    public EndPoint resolveEndPoint(final Class descriptor)
+    {
+        try
+        {
+            return new EndPoint(InetAddress.getByName(hostname), port);
+        }
+        catch (UnknownHostException e)
+        {
+            throw new IllegalArgumentException("Cannot resolve hostname: " + hostname);
+        }
+    }
 }

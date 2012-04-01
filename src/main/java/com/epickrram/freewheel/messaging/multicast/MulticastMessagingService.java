@@ -15,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.messaging.multicast;
 
+import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.io.UnpackerDecoderStream;
 import com.epickrram.freewheel.messaging.MessagingException;
 import com.epickrram.freewheel.messaging.MessagingService;
@@ -107,6 +108,18 @@ public final class MulticastMessagingService implements MessagingService
             e.printStackTrace();
             throw new MessagingException("Failed to send message", e);
         }
+    }
+
+    @Override
+    public DecoderStream sendAndWait(final int topicId, final ByteArrayOutputStream byteArrayOutputStream) throws MessagingException
+    {
+        throw new IllegalStateException(getClass().getSimpleName() + " does not support sendAndWait");
+    }
+
+    @Override
+    public boolean supportsSendAndWait()
+    {
+        return false;
     }
 
     public void registerReceiver(final int topicId, final Receiver receiver)

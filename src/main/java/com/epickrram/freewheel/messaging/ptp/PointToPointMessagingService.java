@@ -15,6 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.messaging.ptp;
 
+import com.epickrram.freewheel.io.DecoderStream;
 import com.epickrram.freewheel.messaging.MessagingException;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.messaging.Receiver;
@@ -115,6 +116,18 @@ public final class PointToPointMessagingService implements MessagingService
 
         final ChannelFuture writeFuture = publisherChannelByTopicIdMap.get(topicId).write(buffer);
         // TODO monitor messaging success in different queue, or implement reliable messaging
+    }
+
+    @Override
+    public DecoderStream sendAndWait(final int topicId, final ByteArrayOutputStream byteArrayOutputStream) throws MessagingException
+    {
+        throw new IllegalStateException(getClass().getSimpleName() + " does not support sendAndWait");
+    }
+
+    @Override
+    public boolean supportsSendAndWait()
+    {
+        return false;
     }
 
     @Override

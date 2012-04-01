@@ -13,12 +13,14 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.DecoderStream;
+package com.epickrram.freewheel;
 
-public interface Receiver
+import com.epickrram.freewheel.messaging.config.Remote;
+
+@Remote
+public interface TestSyncInterface
 {
-    void onMessage(final int topicId, final DecoderStream decoderStream);
-    Object onSyncMessage(final int topicId, final DecoderStream decoderStream);
+    Integer methodOne(int value);
+    void ayncMethod(int value);
 }

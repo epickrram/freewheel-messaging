@@ -16,9 +16,12 @@
 package com.epickrram.freewheel.remoting;
 
 import com.epickrram.freewheel.io.PackerEncoderStream;
+import com.epickrram.freewheel.io.UnpackerDecoderStream;
+import com.epickrram.freewheel.messaging.Bits;
 import com.epickrram.freewheel.messaging.MessagingService;
 import com.epickrram.freewheel.protocol.CodeBook;
 import com.epickrram.freewheel.protocol.CodeBookImpl;
+import org.hamcrest.CoreMatchers;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
@@ -26,10 +29,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.msgpack.packer.MessagePackPacker;
+import org.msgpack.unpacker.MessagePackUnpacker;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 
 import static com.epickrram.MatcherFactory.aByteOutputBufferMatching;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 @RunWith(JMock.class)
 public final class DirectPublisherFactoryTest
@@ -41,12 +49,75 @@ public final class DirectPublisherFactoryTest
     private static final byte SECOND_METHOD_INDEX = (byte) 1;
     private static final byte BYTE_VALUE = (byte)126;
     private static final long LONG_VALUE = 3928473424L;
+    private static final String STRING_VALUE = "STRING_VALUE";
 
     private Mockery mockery = new Mockery();
     private MessagingService messagingService;
     private TopicIdGenerator topicIdGenerator;
     private PublisherFactory publisherFactory;
     private CodeBook codeBook;
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldBlowUpIfSyncMethodRequiredButMessagingServiceDoesNotSupportSendAndWait() throws Exception
+    {
+        mockery.checking(new Expectations()
+        {
+            {
+                allowing(messagingService).supportsSendAndWait();
+                will(returnValue(false));
+            }
+        });
+
+        publisherFactory.createPublisher(SyncMethodInterface.class);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldBlowUpIfSyncMethodReturnsPrimitiveValue() throws Exception
+    {
+        mockery.checking(new Expectations()
+        {
+            {
+                allowing(messagingService).supportsSendAndWait();
+                will(returnValue(true));
+            }
+        });
+
+        publisherFactory.createPublisher(SyncMethodPrimitiveReturnValueInterface.class);
+    }
+
+    @Test
+    public void shouldGeneratePublisherForSyncMethodInterface() throws Exception
+    {
+        mockery.checking(new Expectations()
+        {
+            {
+                allowing(messagingService).supportsSendAndWait();
+                will(returnValue(true));
+            }
+        });
+
+        final SyncMethodInterface publisher = publisherFactory.createPublisher(SyncMethodInterface.class);
+        final ByteArrayOutputStream expectedMessage = new ByteArrayOutputStream(10);
+        final PackerEncoderStream encoderStream = encoderFor(expectedMessage);
+
+        final ByteArrayOutputStream encodedResponse = new ByteArrayOutputStream();
+        final PackerEncoderStream responseEncoder = encoderFor(encodedResponse);
+        responseEncoder.writeString(STRING_VALUE);
+        final UnpackerDecoderStream decoderStream = new UnpackerDecoderStream(codeBook, new MessagePackUnpacker(new ByteArrayInputStream(encodedResponse.toByteArray())));
+        encoderStream.writeInt(TOPIC_IC);
+        encoderStream.writeByte(FIRST_METHOD_INDEX);
+        encoderStream.writeInt(INT_VALUE_1);
+
+        mockery.checking(new Expectations()
+        {
+            {
+                exactly(1).of(messagingService).sendAndWait(with(TOPIC_IC), with(aByteOutputBufferMatching(expectedMessage)));
+                will(returnValue(decoderStream));
+            }
+        });
+
+        assertThat(publisher.invoke(INT_VALUE_1), is(STRING_VALUE));
+    }
 
     @Test
     public void shouldGeneratePublisherForSingleNoArgsMethodInterface() throws Exception
@@ -55,7 +126,7 @@ public final class DirectPublisherFactoryTest
         final ByteArrayOutputStream expectedMessage = new ByteArrayOutputStream(10);
         final PackerEncoderStream encoderStream = encoderFor(expectedMessage);
         encoderStream.writeInt(TOPIC_IC);
-        encoderStream.writeInt(FIRST_METHOD_INDEX);
+        encoderStream.writeByte(FIRST_METHOD_INDEX);
 
         mockery.checking(new Expectations()
         {
@@ -164,5 +235,15 @@ public final class DirectPublisherFactoryTest
     private interface SingleNoArgsMethodInterface
     {
         void invoke();
+    }
+
+    private interface SyncMethodInterface
+    {
+        String invoke(int value);
+    }
+
+    private interface SyncMethodPrimitiveReturnValueInterface
+    {
+        int invoke(long value);
     }
 }

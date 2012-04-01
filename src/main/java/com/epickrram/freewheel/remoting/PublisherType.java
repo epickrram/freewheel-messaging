@@ -13,12 +13,16 @@
 //   See the License for the specific language governing permissions and        //
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
-package com.epickrram.freewheel.messaging;
 
-import com.epickrram.freewheel.io.DecoderStream;
+package com.epickrram.freewheel.remoting;
 
-public interface Receiver
+public enum PublisherType
 {
-    void onMessage(final int topicId, final DecoderStream decoderStream);
-    Object onSyncMessage(final int topicId, final DecoderStream decoderStream);
+    DIRECT,
+    BUFFERED;
+
+    public boolean isDirect()
+    {
+        return this == DIRECT;
+    }
 }
