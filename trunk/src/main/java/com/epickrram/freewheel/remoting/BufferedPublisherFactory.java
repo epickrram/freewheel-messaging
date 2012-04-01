@@ -23,35 +23,26 @@ import com.epickrram.freewheel.util.DaemonThreadFactory;
 import com.epickrram.freewheel.util.RingBufferWrapper;
 import com.lmax.disruptor.EventProcessor;
 import javassist.CannotCompileException;
-import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtNewMethod;
-import javassist.LoaderClassPath;
-import javassist.Modifier;
-import javassist.NotFoundException;
-import javassist.bytecode.ClassFile;
 import javassist.bytecode.MethodInfo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.epickrram.freewheel.remoting.GeneratedClassRegistry.CONSTRUCTOR_MAP;
+import static com.epickrram.freewheel.remoting.ReflectionUtil.hasSyncMethods;
 import static java.util.Collections.singletonList;
 
-public final class BufferedPublisherFactory implements PublisherFactory
+public final class BufferedPublisherFactory extends AbstractPublisherFactory
 {
     private final RingBufferFactory ringBufferFactory;
-    private final TopicIdGenerator topicIdGenerator;
-    private final CodeBook codeBook;
     private final Collection<LifecycleAware> eventProcessorLifecycleHandler;
     // TODO replace with Memoizer
     private static final Map<Class<?>, RingBufferWrapper<OutgoingMessageEvent>> RING_BUFFER_MAP =
@@ -62,9 +53,8 @@ public final class BufferedPublisherFactory implements PublisherFactory
                                     final TopicIdGenerator topicIdGenerator,
                                     final CodeBook codeBook)
     {
+        super(AbstractReliablePublisher.class.getName(), topicIdGenerator, codeBook);
         this.ringBufferFactory = ringBufferFactory;
-        this.topicIdGenerator = topicIdGenerator;
-        this.codeBook = codeBook;
         final LifecycleAware lifecycleHandler = new EventProcessorLifecycleAware(ringBufferFactory.getEventProcessors());
         eventProcessorLifecycleHandler = singletonList(lifecycleHandler);
     }
@@ -75,99 +65,23 @@ public final class BufferedPublisherFactory implements PublisherFactory
         return eventProcessorLifecycleHandler;
     }
 
-    @SuppressWarnings({"unchecked"})
-    public <T> T createPublisher(final Class<T> descriptor) throws RemotingException
+    @Override
+    protected <T> void validatePublisher(final Class<T> descriptor)
     {
-        final Remote definition = validateRemoteInterface(descriptor);
-        try
+        if(hasSyncMethods(descriptor))
         {
-            if(CONSTRUCTOR_MAP.containsKey(descriptor))
-            {
-                return createPublisher(descriptor, CONSTRUCTOR_MAP.get(descriptor));
-            }
-            final String generatedClassname = getGeneratedClassname(descriptor);
-            final ClassPool classPool = new ClassPool(ClassPool.getDefault());
-            classPool.appendClassPath(new LoaderClassPath(Thread.currentThread().getContextClassLoader()));
-            classPool.appendClassPath(new LoaderClassPath(ClassLoader.getSystemClassLoader()));
-
-            classPool.importPackage("com.epickrram.freewheel.messaging");
-            classPool.importPackage("com.epickrram.freewheel.stream");
-            classPool.importPackage("com.epickrram.freewheel.io");
-            classPool.importPackage("com.epickrram.freewheel.remoting");
-            classPool.importPackage("com.epickrram.freewheel.util");
-            classPool.importPackage("org.msgpack.packer");
-            classPool.importPackage("java.io");
-            final CtClass superClass = classPool.get("com.epickrram.freewheel.remoting.AbstractReliablePublisher");
-            final CtClass ctClass = classPool.makeClass(generatedClassname, superClass);
-            final ClassFile classFile = ctClass.getClassFile();
-
-            ctClass.setModifiers(Modifier.PUBLIC | Modifier.FINAL);
-            classFile.addInterface(descriptor.getName());
-
-            final Method[] methods = descriptor.getDeclaredMethods();
-            Arrays.sort(methods, new MethodNameComparator());
-            for (int methodIndex = 0; methodIndex < methods.length; methodIndex++)
-            {
-                final Method method = methods[methodIndex];
-                classFile.addMethod(createMethod(method, methodIndex, ctClass));
-            }
-
-            final Constructor jdkConstructor = ctClass.toClass().getConstructor(new Class[]{RingBufferWrapper.class, int.class, CodeBook.class});
-            CONSTRUCTOR_MAP.put(descriptor, jdkConstructor);
-            RING_BUFFER_MAP.put(descriptor, ringBufferFactory.createRingBuffer(definition.messageStoreSize()));
-
-            return createPublisher(descriptor, jdkConstructor);
-        }
-        catch (CannotCompileException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
-        }
-        catch (NoSuchMethodException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
-        }
-        catch (InvocationTargetException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
-        }
-        catch (InstantiationException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
-        }
-        catch (NotFoundException e)
-        {
-            throw new RemotingException("Unable to generate publisher", e);
+            throw new IllegalArgumentException("Buffered Publisher methods cannot have return values");
         }
     }
 
-    private <T> Remote validateRemoteInterface(final Class<T> descriptor)
-    {
-        final Remote annotation = descriptor.getAnnotation(Remote.class);
-        if(annotation == null)
-        {
-            throw new IllegalArgumentException("Publisher interfaces must be marked with the @Remote annotation");
-        }
-
-        return annotation;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private <T> T createPublisher(final Class<T> descriptor, final Constructor jdkConstructor) throws InstantiationException, IllegalAccessException, InvocationTargetException
-    {
-        return (T) jdkConstructor.newInstance(RING_BUFFER_MAP.get(descriptor), topicIdGenerator.getTopicId(descriptor), codeBook);
-    }
-
-    private MethodInfo createMethod(final Method method, final int methodIndex, final CtClass ctClass) throws CannotCompileException
+    @Override
+    protected MethodInfo generateMethod(final Method method, final int methodIndex, final CtClass ctClass) throws CannotCompileException
     {
         final StringBuilder methodSource = new StringBuilder();
         methodSource.append("public void ").append(method.getName()).append("(");
 
         final Class<?>[] parameterTypes = method.getParameterTypes();
-        appendParameterTypes(methodSource, parameterTypes);
+        MethodHelper.appendParameterTypes(methodSource, parameterTypes);
 
         methodSource.append(") {\n").
 
@@ -183,7 +97,7 @@ public final class BufferedPublisherFactory implements PublisherFactory
                 append(methodIndex).
                 append(");\n");
 
-        appendBufferCalls(methodSource, parameterTypes);
+        MethodHelper.appendEncodeParameterCalls(methodSource, parameterTypes);
 
         methodSource.append("} catch(IOException e) {\n").
                 append("throw new RuntimeException(\"Failed to write \", e);\n").
@@ -194,56 +108,18 @@ public final class BufferedPublisherFactory implements PublisherFactory
         return CtNewMethod.make(methodSource.toString(), ctClass).getMethodInfo();
     }
 
-    private void appendBufferCalls(final StringBuilder methodSource, final Class<?>[] parameterTypes)
+    @Override
+    protected Constructor createConstructor(final Class<?> generatedPublisherClass, final Remote definition, final Class<?> descriptor) throws NoSuchMethodException
     {
-        char id = 'a';
-        for(int i = 0, n = parameterTypes.length; i < n; i++)
-        {
-            methodSource.append("encoderStream.");
-            appendBufferMethodCall(parameterTypes[i], methodSource, id++);
-        }
+        final Constructor jdkConstructor = generatedPublisherClass.getConstructor(new Class[]{RingBufferWrapper.class, int.class, CodeBook.class});
+        RING_BUFFER_MAP.put(descriptor, ringBufferFactory.createRingBuffer(definition.messageStoreSize()));
+        return jdkConstructor;
     }
 
-    private void appendParameterTypes(final StringBuilder methodSource, final Class<?>[] parameterTypes)
+    @SuppressWarnings({"unchecked"})
+    protected <T> T createPublisher(final Class<T> descriptor, final Constructor jdkConstructor) throws InstantiationException, IllegalAccessException, InvocationTargetException
     {
-        char id = 'a';
-        for(int i = 0, n = parameterTypes.length; i < n; i++)
-        {
-            if(i != 0)
-            {
-                methodSource.append(", ");
-            }
-            methodSource.append(parameterTypes[i].getName()).append(' ').append(id++);
-        }
-    }
-
-    private static void appendBufferMethodCall(final Class<?> parameterType, final StringBuilder methodSource, final char parameterName)
-    {
-        if(int.class == parameterType)
-        {
-            methodSource.append("writeInt(").append(parameterName).append(");");
-        }
-        else if(long.class == parameterType)
-        {
-            methodSource.append("writeLong(").append(parameterName).append(");");
-        }
-        else if(byte.class == parameterType)
-        {
-            methodSource.append("writeByte(").append(parameterName).append(");");
-        }
-        else if(String.class == parameterType)
-        {
-            methodSource.append("writeString(").append(parameterName).append(");");
-        }
-        else
-        {
-            methodSource.append("writeObject(").append(parameterName).append(");");
-        }
-    }
-
-    private String getGeneratedClassname(final Class<?> descriptor)
-    {
-        return descriptor.getName() + "Publisher";
+        return (T) jdkConstructor.newInstance(RING_BUFFER_MAP.get(descriptor), topicIdGenerator.getTopicId(descriptor), codeBook);
     }
 
     private static final class EventProcessorLifecycleAware implements LifecycleAware
