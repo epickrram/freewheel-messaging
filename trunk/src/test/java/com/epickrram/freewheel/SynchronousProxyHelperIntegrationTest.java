@@ -14,7 +14,7 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram;
+package com.epickrram.freewheel;
 
 import com.epickrram.freewheel.messaging.MessagingContext;
 import com.epickrram.freewheel.messaging.MessagingContextFactory;

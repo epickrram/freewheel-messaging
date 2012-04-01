@@ -18,8 +18,13 @@ package com.epickrram.freewheel.remoting;
 
 import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
 import com.epickrram.freewheel.util.RingBufferWrapper;
+import com.lmax.disruptor.EventProcessor;
+
+import java.util.List;
 
 public interface RingBufferFactory
 {
     RingBufferWrapper<OutgoingMessageEvent> createRingBuffer(final int size);
+
+    List<EventProcessor> getEventProcessors();
 }

@@ -61,6 +61,7 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
             final CtClass ctClass = createSubscriberClass(subscriberClassname, classPool, descriptorClassname, invokerInterfaceName, invokerInterfaceClass);
             createConstructor(descriptor, subscriberClassname, classPool, ctClass, invokerInterfaceName);
             createReceiveMethod(ctClass);
+            createSyncReceiveMethod(ctClass);
             return ctClass.toClass();
         }
         catch (NotFoundException e)
@@ -79,16 +80,19 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
     {
         final CtClass ctClass = classPool.makeClass(subscriberClassname);
         ctClass.addInterface(classPool.get("com.epickrram.freewheel.messaging.Receiver"));
-        final String methodSrc = "public void invoke(" + descriptorClassname + " implementation, " +
+        final String asyncMethodSrc = "public void invoke(" + descriptorClassname + " implementation, " +
                 "DecoderStream decoderStream);";
-        final CtMethod invocationMethod = CtMethod.make(methodSrc, invokerInterfaceClass);
-        invokerInterfaceClass.addMethod(invocationMethod);
+        final String syncMethodSrc = "public Object invokeSync(" + descriptorClassname + " implementation, " +
+                "DecoderStream decoderStream);";
+        invokerInterfaceClass.addMethod(CtMethod.make(asyncMethodSrc, invokerInterfaceClass));
+        invokerInterfaceClass.addMethod(CtMethod.make(syncMethodSrc, invokerInterfaceClass));
         invokerInterfaceClass.toClass();
 
         ctClass.setModifiers(Modifier.PUBLIC | Modifier.FINAL);
         final String invokerArray = "private final " + invokerInterfaceName + "[] invokers;";
         ctClass.addField(CtField.make(invokerArray, ctClass));
-        final String implementationField = "private final " + descriptorClassname + " implementation;";        ctClass.addField(CtField.make(implementationField, ctClass));
+        final String implementationField = "private final " + descriptorClassname + " implementation;";
+        ctClass.addField(CtField.make(implementationField, ctClass));
         return ctClass;
     }
 
@@ -119,11 +123,22 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
                                               final String generatedClassname, final Class<T> descriptor, final String invokerInterfaceName)
             throws NotFoundException, CannotCompileException
     {
-        final CtClass ctClass = classPool.makeClass(generatedClassname + "Invoker" + methodIndex);
+        final boolean isSyncMethod = ReflectionUtil.isSyncMethod(method);
+
+        final String invokerClassname = generatedClassname + "Invoker" + methodIndex;
+        final CtClass ctClass = classPool.makeClass(invokerClassname);
         ctClass.addInterface(classPool.getCtClass(invokerInterfaceName));
-        final StringBuilder methodSource = new StringBuilder().
-                append("public void invoke(").append(SubscriberFactory.classDefinitionToClassname(descriptor)).
-                append(" implementation, DecoderStream decoderStream) {");
+        final StringBuilder methodSource = new StringBuilder("public ");
+        if(isSyncMethod)
+        {
+            methodSource.append("Object invokeSync(");
+        }
+        else
+        {
+            methodSource.append("void invoke(");
+        }
+        methodSource.append(SubscriberFactory.classDefinitionToClassname(descriptor)).
+                append(" implementation, DecoderStream decoderStream) {\n");
         final Class<?>[] parameterTypes = method.getParameterTypes();
         char parameterId = 'a';
         for (final Class<?> parameterType : parameterTypes)
@@ -151,6 +166,11 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
                         append(") decoderStream.readObject();\n");
             }
         }
+
+        if(isSyncMethod)
+        {
+            methodSource.append("return ");
+        }
         methodSource.append("implementation.").append(method.getName()).append("(");
         parameterId = 'a';
         for (int i = 0; i < parameterTypes.length; i++)
@@ -161,8 +181,25 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
             }
             methodSource.append((parameterId++));
         }
-        methodSource.append(");}");
+        methodSource.append(");}\n");
+
         ctClass.addMethod(CtMethod.make(methodSource.toString(), ctClass));
+
+        methodSource.setLength(0);
+        if(!isSyncMethod)
+        {
+            methodSource.append("Object invokeSync(");
+            methodSource.append(SubscriberFactory.classDefinitionToClassname(descriptor)).
+                append(" implementation, DecoderStream decoderStream) {\nreturn null;\n}\n");
+        }
+        else
+        {
+            methodSource.append("void invoke(");
+            methodSource.append(SubscriberFactory.classDefinitionToClassname(descriptor)).
+                append(" implementation, DecoderStream decoderStream) {\n}\n");
+        }
+        ctClass.addMethod(CtMethod.make(methodSource.toString(), ctClass));
+
         ctClass.addConstructor(CtNewConstructor.defaultConstructor(ctClass));
         ctClass.toClass();
         return ctClass;
@@ -170,13 +207,21 @@ final class GeneratedSubscriberClassProvider<T> implements Provider<String, Clas
 
     private void createReceiveMethod(final CtClass ctClass) throws CannotCompileException
     {
-        final String invocation = "public void onMessage(int topicId, DecoderStream decoderStream) {" +
-                " int methodIndex = decoderStream.readByte();" +
-                " invokers[methodIndex].invoke(implementation, decoderStream);" +
-                "}";
+        final String invocation = "public void onMessage(int topicId, DecoderStream decoderStream) {\n" +
+                " int methodIndex = decoderStream.readByte();\n" +
+                " invokers[methodIndex].invoke(implementation, decoderStream);\n" +
+                "}\n";
 
         ctClass.addMethod(CtMethod.make(invocation, ctClass));
     }
 
+    private void createSyncReceiveMethod(final CtClass ctClass) throws CannotCompileException
+    {
+        final String invocation = "public Object onSyncMessage(int topicId, DecoderStream decoderStream) {\n" +
+                " int methodIndex = decoderStream.readByte();\n" +
+                " return invokers[methodIndex].invokeSync(implementation, decoderStream);\n" +
+                "}\n";
 
+        ctClass.addMethod(CtMethod.make(invocation, ctClass));
+    }
 }

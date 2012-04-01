@@ -14,11 +14,10 @@
 //   limitations under the License.                                             //
 //////////////////////////////////////////////////////////////////////////////////
 
-package com.epickrram;
+package com.epickrram.freewheel;
 
 import com.epickrram.freewheel.messaging.MessagingContext;
 import com.epickrram.freewheel.messaging.MessagingContextFactory;
-import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.messaging.ptp.PropertiesFileEndPointProvider;
 import org.junit.After;
 import org.junit.Assert;
@@ -33,6 +32,21 @@ import java.util.concurrent.Executors;
 public final class PointToPointMessagingServiceIntegrationTest
 {
     private MessagingContext messagingContext;
+
+    @Before
+    public void setUp() throws Exception
+    {
+        final PropertiesFileEndPointProvider endPointProvider =
+                new PropertiesFileEndPointProvider(getClass().getSimpleName() + "/end-point.properties");
+
+        messagingContext = new MessagingContextFactory().createDirectPointToPointMessagingContext(endPointProvider);
+    }
+
+    @After
+    public void tearDown()
+    {
+        messagingContext.stop();
+    }
 
     @Test
     public void shouldAllowMultipleSubscribers() throws Exception
@@ -129,21 +143,6 @@ public final class PointToPointMessagingServiceIntegrationTest
         Assert.assertEquals(printMissing(testInterface.methodTwoInvocationArguments), expectedCallsOnMethodTwo, testInterface.methodTwoInvocationCount);
     }
 
-    @Before
-    public void setUp() throws Exception
-    {
-        final PropertiesFileEndPointProvider endPointProvider =
-                new PropertiesFileEndPointProvider(getClass().getSimpleName() + "/end-point.properties");
-
-        messagingContext = new MessagingContextFactory().createPointToPointMessagingContext(endPointProvider);
-    }
-
-    @After
-    public void tearDown()
-    {
-        messagingContext.stop();
-    }
-
     private void waitForExpectedMethodCalls(final TestInterfaceImpl testInterface, final int expectedCallsOnMethodTwo) throws InterruptedException
     {
         final long timeout = System.currentTimeMillis() + 10000L;
@@ -204,17 +203,4 @@ public final class PointToPointMessagingServiceIntegrationTest
         }
     }
 
-    @Remote
-    public interface TestInterface
-    {
-        void methodOne(int value);
-        void methodTwo(long first, int second, byte third);
-    }
-
-    @Remote
-    public interface TestInterface2
-    {
-        void methodOne(int value);
-        void methodTwo(long first, int second, byte third);
-    }
 }

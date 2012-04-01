@@ -35,6 +35,7 @@ import org.junit.runner.RunWith;
 import org.msgpack.packer.MessagePackPacker;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Collections;
 
 import static com.epickrram.MatcherFactory.aByteOutputBufferMatching;
 
@@ -65,6 +66,9 @@ public final class BufferedPublisherFactoryTest
             {
                 allowing(topicIdGenerator).getTopicId(with(any(Class.class)));
                 will(returnValue(TOPIC_ID));
+
+                allowing(ringBufferFactory).getEventProcessors();
+                will(returnValue(Collections.emptyList()));
             }
         });
         codeBook = new CodeBookImpl();
@@ -147,8 +151,8 @@ public final class BufferedPublisherFactoryTest
         publisher.invoke(42, (byte) 11);
         publisher.invoke(Long.MAX_VALUE, 11, (byte) 3);
 
-        assertMessageContents(expectedMessageOne, (ByteArrayOutputStream) firstEvent.getOutput());
-        assertMessageContents(expectedMessageTwo, (ByteArrayOutputStream) secondEvent.getOutput());
+        assertMessageContents(expectedMessageOne, firstEvent.getOutput());
+        assertMessageContents(expectedMessageTwo, secondEvent.getOutput());
     }
 
     private void assertMessageContents(final ByteArrayOutputStream expected,

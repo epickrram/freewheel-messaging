@@ -16,8 +16,14 @@
 
 package com.epickrram.freewheel.remoting;
 
+import com.epickrram.freewheel.messaging.LifecycleAware;
+
+import java.util.Collection;
+
 public interface PublisherFactory
 {
     @SuppressWarnings({"unchecked"})
     <T> T createPublisher(Class<T> descriptor) throws RemotingException;
+
+    Collection<LifecycleAware> getLifecycleAwareCollection();
 }

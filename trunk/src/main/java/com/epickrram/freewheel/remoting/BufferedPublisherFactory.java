@@ -15,10 +15,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.remoting;
 
+import com.epickrram.freewheel.messaging.LifecycleAware;
 import com.epickrram.freewheel.messaging.OutgoingMessageEvent;
 import com.epickrram.freewheel.messaging.config.Remote;
 import com.epickrram.freewheel.protocol.CodeBook;
+import com.epickrram.freewheel.util.DaemonThreadFactory;
 import com.epickrram.freewheel.util.RingBufferWrapper;
+import com.lmax.disruptor.EventProcessor;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -33,19 +36,27 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.epickrram.freewheel.remoting.GeneratedClassRegistry.CONSTRUCTOR_MAP;
+import static java.util.Collections.singletonList;
 
 public final class BufferedPublisherFactory implements PublisherFactory
 {
     private final RingBufferFactory ringBufferFactory;
     private final TopicIdGenerator topicIdGenerator;
     private final CodeBook codeBook;
+    private final Collection<LifecycleAware> eventProcessorLifecycleHandler;
     // TODO replace with Memoizer
     private static final Map<Class<?>, RingBufferWrapper<OutgoingMessageEvent>> RING_BUFFER_MAP =
             new ConcurrentHashMap<Class<?>, RingBufferWrapper<OutgoingMessageEvent>>();
+
 
     public BufferedPublisherFactory(final RingBufferFactory ringBufferFactory,
                                     final TopicIdGenerator topicIdGenerator,
@@ -54,6 +65,14 @@ public final class BufferedPublisherFactory implements PublisherFactory
         this.ringBufferFactory = ringBufferFactory;
         this.topicIdGenerator = topicIdGenerator;
         this.codeBook = codeBook;
+        final LifecycleAware lifecycleHandler = new EventProcessorLifecycleAware(ringBufferFactory.getEventProcessors());
+        eventProcessorLifecycleHandler = singletonList(lifecycleHandler);
+    }
+
+    @Override
+    public Collection<LifecycleAware> getLifecycleAwareCollection()
+    {
+        return eventProcessorLifecycleHandler;
     }
 
     @SuppressWarnings({"unchecked"})
@@ -225,5 +244,35 @@ public final class BufferedPublisherFactory implements PublisherFactory
     private String getGeneratedClassname(final Class<?> descriptor)
     {
         return descriptor.getName() + "Publisher";
+    }
+
+    private static final class EventProcessorLifecycleAware implements LifecycleAware
+    {
+        private final List<EventProcessor> eventProcessors;
+        private volatile ExecutorService executorService;
+
+        public EventProcessorLifecycleAware(final List<EventProcessor> eventProcessors)
+        {
+            this.eventProcessors = eventProcessors;
+        }
+
+        @Override
+        public void systemStarting()
+        {
+            // TODO central control for Thread lifecycle
+            final DaemonThreadFactory threadFactory = new DaemonThreadFactory("publisher");
+            this.executorService = Executors.newFixedThreadPool(eventProcessors.size(), threadFactory);
+            for (EventProcessor eventProcessor : eventProcessors)
+            {
+                executorService.submit(eventProcessor);
+            }
+        }
+
+        @Override
+        public void systemStopping()
+        {
+            // TODO should halt() ringbuffers
+            executorService.shutdown();
+        }
     }
 }

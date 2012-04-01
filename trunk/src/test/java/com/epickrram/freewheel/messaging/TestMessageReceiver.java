@@ -63,6 +63,12 @@ public final class TestMessageReceiver implements Receiver
         topicMessageList.add(buffer.toByteArray());
     }
 
+    @Override
+    public Object onSyncMessage(final int topicId, final DecoderStream decoderStream)
+    {
+        throw new UnsupportedOperationException();
+    }
+
     public void waitForMessageReceived(final int topicId, final byte[] expectedMessage)
     {
         final long timeout = System.currentTimeMillis() + TIMEOUT_MILLIS;

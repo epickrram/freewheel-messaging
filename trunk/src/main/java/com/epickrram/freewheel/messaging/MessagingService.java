@@ -15,11 +15,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 package com.epickrram.freewheel.messaging;
 
+import com.epickrram.freewheel.io.DecoderStream;
+
 import java.io.ByteArrayOutputStream;
 
 public interface MessagingService
 {
     void send(int topicId, ByteArrayOutputStream byteArrayOutputStream) throws MessagingException;
+    DecoderStream sendAndWait(int topicId, ByteArrayOutputStream byteArrayOutputStream) throws MessagingException;
     void registerReceiver(int topicId, Receiver receiver);
 
     <T> void registerPublisher(final Class<T> descriptor);
@@ -27,4 +30,6 @@ public interface MessagingService
 
     void start() throws MessagingException;
     void shutdown() throws MessagingException;
+
+    boolean supportsSendAndWait();
 }
