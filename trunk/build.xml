@@ -2,13 +2,24 @@
 
 <project name="freewheel" basedir="." default="all">
 
-    <property name="dist.dir" value="build/dist"/>
-    <property name="test.dir" value="build/test"/>
-    <property name="test-classes.dir" value="build/test/classes"/>
-    <property name="test-output.dir" value="build/test/output"/>
-    <property name="release.dir" value="build/release"/>
-    <property name="majorVersion" value="0"/>
-    <property name="minorVersion" value="1"/>
+    <property name="build.dir" value="build"/>
+    <property name="dist.dir" value="${build.dir}/dist"/>
+    <property name="test.dir" value="${build.dir}/test"/>
+    <property name="main.src.dir" value="src/main/java"/>
+    <property name="test.src.dir" value="src/test/java"/>
+    <property name="manifest.src" value="manifest/MANIFEST.MF"/>
+    <property name="test.resources.dir" value="src/test/resources"/>
+    <property name="test.compile.output.dir" value="${build.dir}/test/classes"/>
+    <property name="main.compile.output.dir" value="${build.dir}/main/classes"/>
+    <property name="manifest.output" value="${main.compile.output.dir}/MANIFEST.MF"/>
+    <property name="test.report.dir" value="${build.dir}/test/report"/>
+    <property name="release.dir" value="${build.dir}/release"/>
+    <property name="project.name" value="Freewheel Messaging"/>
+    <property name="version.major" value="0"/>
+    <property name="version.minor" value="1"/>
+    <tstamp>
+        <format property="version.timestamp" pattern="yyyy-MM-dd HH:mm:ss"/>
+    </tstamp>
 
     <path id="dist.class.path">
         <fileset dir="lib/dist">
@@ -16,63 +27,100 @@
         </fileset>
     </path>
 
-    <path id="build.class.path">
+    <path id="main.compile.class.path">
         <fileset dir="lib/build">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="lib/optional">
             <include name="*.jar"/>
         </fileset>
         <path refid="dist.class.path"/>
     </path>
 
-    <path id="test-class.class.path">
+    <path id="test.compile.class.path">
         <path refid="dist.class.path"/>
-        <path refid="build.class.path"/>
-        <fileset dir="${dist.dir}/classes">
-            <include name="**/*.class"/>
-        </fileset>
+        <path refid="main.compile.class.path"/>
+        <path location="${main.compile.output.dir}"/>
     </path>
 
-    <path id="test.class.path">
-        <path refid="dist.class.path"/>
-        <path refid="build.class.path"/>
-        <path refid="test-class.class.path"/>
-        <fileset dir="${test-classes.dir}">
-            <include name="**/*.class"/>
-        </fileset>
+    <path id="junit.class.path">
+        <path refid="test.compile.class.path"/>
+        <path location="${test.compile.output.dir}"/>
+        <path location="${test.resources.dir}"/>
     </path>
 
     <target name="clean">
-        <delete dir="${dist.dir}"/>
+        <delete dir="${build.dir}"/>
     </target>
 
     <target name="compile" depends="clean">
-        <mkdir dir="${dist.dir}/classes"/>
-    	<javac destdir="${dist.dir}/classes" srcdir="src" target="6" source="6"  debug="true" debuglevel="lines,vars,source">
-    		<classpath refid="build.class.path"/>
+        <mkdir dir="${main.compile.output.dir}"/>
+
+    	<javac destdir="${main.compile.output.dir}" srcdir="${main.src.dir}" target="6" source="6"
+               debug="true" debuglevel="lines,vars,source" includeantruntime="false">
+    		<classpath refid="main.compile.class.path"/>
     	</javac>
+
+        <filter token="version.major" value="${version.major}"/>
+        <filter token="version.minor" value="${version.minor}"/>
+        <filter token="version.timestamp" value="${version.timestamp}"/>
+        <filter token="project.name" value="${project.name}"/>
+        <copy file="${manifest.src}" todir="${main.compile.output.dir}" filtering="true"/>
     </target>
 
-    <target name="compile-test" depends="clean">
-        <mkdir dir="${test-classes.dir}"/>
-    	<javac destdir="${test-classes.dir}" srcdir="src" target="6" source="6"  debug="true" debuglevel="lines,vars,source">
-    		<classpath refid="test-class.class.path"/>
+    <target name="compile-test" depends="compile">
+        <mkdir dir="${test.compile.output.dir}"/>
+    	<javac destdir="${test.compile.output.dir}" srcdir="${test.src.dir}" target="6" source="6"
+               debug="true" debuglevel="lines,vars,source" includeantruntime="false">
+    		<classpath refid="test.compile.class.path"/>
     	</javac>
     </target>
 
     <target name="test" depends="compile, compile-test">
-        <mkdir dir="${test-output.dir}"/>
+        <mkdir dir="${test.report.dir}/xml"/>
+        <mkdir dir="${test.report.dir}/html"/>
 
+        <junit printsummary="yes" haltonfailure="no" failureproperty="test.failure">
+            <classpath>
+                <path refid="junit.class.path"/>
+            </classpath>
+
+            <batchtest fork="yes" todir="${test.report.dir}/xml">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test.java"/>
+                </fileset>
+
+                <formatter type="xml"/>
+            </batchtest>
+        </junit>
+
+        <junitreport todir="${test.report.dir}">
+            <fileset dir="${test.report.dir}/xml">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report todir="${test.report.dir}/html"
+                    format="frames">
+            </report>
+        </junitreport>
+
+        <fail if="${test.failure}" message="Unit tests failed"/>
     </target>
 
-    <target name="jar" depends="compile">
-        <jar destfile="${dist.dir}/freewheel-${majorVersion}.${minorVersion}.jar"
-             basedir="${dist.dir}/classes" manifest="manifest/MANIFEST.MF"/>
+    <target name="jar" depends="test">
+        <delete dir="${dist.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+
+        <jar destfile="${dist.dir}/freewheel-${version.major}.${version.minor}.jar"
+             basedir="${main.compile.output.dir}" manifest="${manifest.output}" excludes="**/*.MF">
+        </jar>
     </target>
 
     <target name="dist" depends="jar">
         <delete dir="${release.dir}"/>
         <mkdir dir="${release.dir}"/>
+
         <copy todir="${release.dir}">
-            <fileset dir="${dist.dir}" includes="freewheel-${majorVersion}.${minorVersion}.jar"/>
+            <fileset dir="${dist.dir}" includes="freewheel-${version.major}.${version.minor}.jar"/>
         </copy>
 
         <mkdir dir="${release.dir}/lib"/>
@@ -82,7 +130,7 @@
             </fileset>
         </copy>
 
-        <zip zipfile="${dist.dir}/freewheel-${majorVersion}.${minorVersion}.zip">
+        <zip zipfile="${dist.dir}/freewheel-${version.major}.${version.minor}.zip">
             <fileset dir="${release.dir}" includes="**/*"/>
         </zip>
     </target>
